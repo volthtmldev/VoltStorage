@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>
+/* ===== VOLT VERSION =====
+   Volt reads its version from this file's NAME: put the number in brackets, like  Volt (1.2.0).html
+   The number below is only used when the file name has no (number). */
+const VOLT_VERSION="1.2.0";
+/* ===== UPDATE SOURCE (optional) =====
+   Fill this in once and every copy of this launcher checks your Google Drive folder or GitHub repo
+   for a newer launcher and for game profiles to download. Leave type "" to switch it off.
+   Google Drive : type:"drive",  folder:"<folder link or id>", key:"<Google API key>"   (folder shared as "Anyone with the link")
+   GitHub       : type:"github", repo:"owner/repo", path:"<folder, optional>", branch:"<optional>"
+   In that folder put:  Volt (1.2.0).html  and one .zip per game profile, e.g.  Space Run.zip */
+const VOLT_SOURCE={type:"drive",folder:"1Xtg0bwND9X239N2Qgvr2wghqL70bNzul",key:"AIzaSyALgAiL2fBrunYYJl4cQtt8QfzyQ-h2_14",keys:["AIzaSyA0Eyv595u4lb6BBIa9u3aUrytJNcTXUC4","AIzaSyCl_x4x3ZbMupXHw4TJvC2NDBDLRNUrshw"]/* backup keys: tried in order if the main key hits Google's limit */,repo:"",path:"",branch:""};
+
+/* ===== console capture: copies console.log/warn/error and uncaught errors into Settings > Advanced > Console ===== */
+const dlLogs=[];let dlSeq=0,dlMute=0;
+function dlPush(m,l,src){dlLogs.push({t:Date.now(),m:String(m),l:l||"i",n:++dlSeq,s:src||""});if(dlLogs.length>600)dlLogs.shift()}
+(function(){
+  const fmt=a=>a.map(x=>{if(x instanceof Error)return x.name+": "+x.message+(x.stack?"\n"+x.stack.split("\n").slice(1,3).join("\n"):"");
+    if(x&&typeof x==="object"){try{return JSON.stringify(x)}catch(e){return String(x)}}return String(x)}).join(" ");
+  [["log","i"],["info","i"],["debug","i"],["warn","w"],["error","e"]].forEach(([k,l])=>{const o=console[k];
+    console[k]=function(...a){if(!dlMute){try{dlPush(fmt(a),l,"console."+k)}catch(e){}}return o.apply(this,a)}});
+  addEventListener("error",e=>{try{dlPush((e.message||"Error")+(e.filename?" ("+String(e.filename).split("/").pop()+":"+e.lineno+")":""),"e","error")}catch(x){}});
+  addEventListener("unhandledrejection",e=>{try{dlPush("Unhandled promise rejection: "+fmt([e.reason]),"e","error")}catch(x){}})
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Volt HTML Launcher</title>
+<style>
+:root{--dk:#0e141b;--hov:#2a3a4d;--srch:#316282;--g1:#1b2838;--g2:#0f1923;--ga:180deg;--bgf:linear-gradient(180deg,#1b2838,#0f1923);--panelf:#16202d;--hdrf:#171a21;--btnf:linear-gradient(90deg,#75b022,#5c7e10);--bg:#1b2838;--bg2:#171a21;--panel:#16202d;--hi:#3d4450;--text:#c6d4df;--dim:#8f98a0;--blue:#66c0f4;--green1:#5c7e10;--green2:#75b022}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"Motiva Sans",Arial,Helvetica,sans-serif;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%}
+header{background:var(--hdrf);display:flex;align-items:center;gap:22px;padding:0 16px;height:40px;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+header .logo{color:#fff;font-size:15px}
+header span{color:var(--dim)}header span.on{color:#fff}
+header button{margin-left:auto}
+#main{flex:1;display:flex;min-height:0}
+aside{width:260px;background:var(--panelf);display:flex;flex-direction:column;border-right:1px solid var(--dk)}
+#search{margin:10px;padding:7px 10px;background:var(--srch);border:0;border-radius:3px;color:#fff;font-size:13px;outline:0}
+#search::placeholder{color:#9fc2d9}
+.sechead{font-size:11px;color:var(--dim);padding:6px 12px;letter-spacing:1px;text-transform:uppercase}
+#list{flex:1;overflow:auto}
+#add{margin:10px;text-align:left}
+.item{display:flex;align-items:center;gap:10px;padding:5px 12px;cursor:pointer;font-size:14px;color:var(--dim)}
+.item:hover{background:var(--hov);color:#fff}.item.sel{background:var(--hi);color:#fff}
+.item img,.item .ph{width:24px;height:24px;border-radius:2px;object-fit:cover;flex:none;background:var(--dk)}
+.item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#content{flex:1;overflow:auto;background:var(--bgc,var(--bgf))}
+.hero{position:relative;height:300px;background:var(--dk) center/cover no-repeat}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 30%,var(--g1))}
+.hero h1{position:absolute;left:30px;bottom:18px;z-index:1;margin:0;font-size:38px;color:#fff;text-shadow:0 2px 8px #000}
+.bar{display:flex;align-items:center;gap:14px;padding:16px 30px;background:#0003}
+.play{background:var(--btnf);color:#fff;border:0;border-radius:3px;padding:12px 44px;font-size:18px;font-weight:700;cursor:pointer;text-transform:uppercase}
+.play:hover{filter:brightness(1.15)}.play:disabled{filter:grayscale(1);cursor:wait}
+.btn{background:#ffffff1a;color:var(--text);border:0;border-radius:3px;padding:8px 14px;cursor:pointer;font-size:13px}
+.btn:hover{background:#ffffff33;color:#fff}
+.detail{padding:20px 30px;display:flex;gap:30px;flex-wrap:wrap}
+.detail .desc{flex:1;min-width:280px;line-height:1.6;font-size:15px;white-space:pre-wrap}
+.detail .meta{width:240px}
+.meta h4{margin:0 0 8px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.tag{display:inline-block;background:#67c1f533;color:var(--blue);padding:3px 8px;margin:0 5px 5px 0;border-radius:2px;font-size:12px;cursor:pointer}
+.tag:hover{background:#67c1f566}
+.grid{padding:24px 30px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{background:var(--panelf);border-radius:3px;overflow:hidden;cursor:pointer;transition:transform .15s}
+.card:hover{transform:scale(1.03);box-shadow:0 6px 20px #000a}
+.card .b{position:relative;height:120px;background:var(--dk) center/cover}
+.rib{position:absolute;top:0;left:0;width:96px;height:96px;overflow:hidden;pointer-events:none;z-index:2}
+.rib b{position:absolute;top:19px;left:-33px;width:140px;height:22px;background:#a455c0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:1px;color:#111;box-shadow:0 1px 4px #0009}
+.rib i{width:15px;height:15px;border-radius:50%;background:#000;color:#fff;font-style:normal;font-size:10px;display:flex;align-items:center;justify-content:center}
+.card .t{padding:10px 12px;font-size:14px;color:#fff}
+.card .t small{display:block;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h2.title{margin:0;padding:24px 30px 0;font-weight:400;color:#fff;font-size:22px}
+.empty{max-width:560px;margin:80px auto;text-align:center;line-height:1.7;color:var(--dim)}
+.empty h2{color:#fff}
+.empty pre{text-align:left;background:var(--dk);padding:14px;border-radius:4px;font-size:12px;color:var(--text);overflow:auto}
+footer{background:var(--hdrf);height:28px;display:flex;align-items:center;padding:0 14px;font-size:12px;color:var(--dim)}
+#player{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:10}
+#player.on{display:flex}
+#player .pb{background:var(--hdrf);display:flex;gap:10px;align-items:center;padding:6px 12px;color:#fff;font-size:14px}
+#player iframe{flex:1;border:0;background:#fff}
+#modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:20}
+#modal.on{display:flex}
+.dlg{background:var(--bgf);border:1px solid var(--hi);border-radius:4px;width:min(640px,94vw);max-height:92vh;overflow:auto;box-shadow:0 10px 40px #000}
+.dlg h3{margin:0;padding:14px 18px;background:var(--hdrf);color:#fff;font-weight:400;font-size:18px}
+.dlg .body{padding:16px 18px;display:grid;gap:12px}
+.dlg label{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.dlg input[type=text],.dlg textarea,.dlg select{width:100%;background:var(--dk);border:1px solid var(--hi);color:#fff;border-radius:3px;padding:7px 9px;font:inherit;font-size:14px;outline:0}
+.dlg textarea{min-height:80px;resize:vertical}
+.imgs{display:flex;gap:12px}
+.pv{background:var(--dk) center/cover;border:1px dashed var(--hi);border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12px}
+.pv:hover{border-color:var(--blue)}
+#pvi{width:100px;height:100px}#pvb{height:100px}
+.drop{border:2px dashed var(--hi);border-radius:4px;padding:14px;text-align:center;color:var(--dim);font-size:13px}
+.drop.over{border-color:var(--blue);color:#fff}
+.drop .btn{margin:8px 4px 0}
+.foot{display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;background:#0003}
+.foot .play{font-size:14px;padding:9px 28px}
+#ctx{position:fixed;z-index:30;display:none;min-width:190px;background:#2a3340;color:#dcdedf;border:1px solid #4b5563;border-radius:2px;padding:3px 0;box-shadow:0 4px 14px #000a;font-size:13px}
+#ctx div{padding:6px 16px;cursor:pointer}#ctx div:hover{background:var(--hi);color:#fff}
+#ctx hr{border:0;border-top:1px solid #4b5563;margin:3px 0}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:var(--hi);border-radius:5px}
+.tab{cursor:pointer}header .tab:hover{color:#fff}
+.fld{background:var(--dk);color:#fff;border:1px solid var(--hi);border-radius:3px;padding:7px 9px;font:inherit;font-size:14px;outline:0}
+.gh{padding:7px 12px;font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;cursor:pointer;user-select:none}.gh:hover{color:#fff}
+#settings{flex:1;overflow:auto;background:var(--bgc,var(--bgf))}
+.st{max-width:900px;margin:0 auto;padding:0 30px 40px}
+.st section{background:var(--panelf);border-radius:4px;padding:6px 20px 18px;margin-top:18px}
+.st h3{color:#fff;font-weight:400;font-size:20px}.st h4{color:#fff;margin:16px 0 4px}.st p{color:var(--dim);line-height:1.5}
+.st label{display:block;margin:7px 0}
+.pg{background:var(--dk);border-radius:3px;padding:8px 12px;margin:6px 0;font-size:13px}.pg b{color:#fff}.pg div{color:var(--dim);margin-top:2px}
+.btn:disabled{opacity:.4;cursor:default}
+.crow{display:flex;justify-content:space-between;align-items:center;font-size:13px}.crow input[type=color]{width:60px;height:26px;border:0;background:none;padding:0;cursor:pointer}
+.mini{height:170px;border:1px solid #000;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;background:var(--bgm,var(--bgf));color:var(--text);font-size:9px}
+.mini .mh{background:var(--hdrf);padding:6px 8px;display:flex;gap:10px}.mini .mh b{color:var(--text)}.mini .mh span{color:var(--dim)}
+.mini .mb{flex:1;display:flex}.mini .ms{width:30%;background:var(--panelf);padding:6px;display:grid;gap:4px;align-content:start}
+.mini .ms i{height:8px;background:var(--hi);border-radius:1px}.mini .ms i.on{background:var(--hov);border-left:2px solid var(--blue)}
+.mini .mc{flex:1;background:var(--bgc,var(--bgf));padding:6px;display:flex;flex-direction:column;gap:6px}
+.mini .mhero{flex:1;background:var(--dk);border-radius:2px;display:flex;align-items:flex-end;padding:4px}.mini em{color:var(--blue);font-style:normal}
+.mini u{text-decoration:none;background:var(--btnf);color:#fff;padding:3px 10px;border-radius:2px;width:max-content;font-weight:700}
+.dlg .foot{position:sticky;bottom:0;background:var(--bg2);z-index:5}
+.te{display:flex;gap:20px;align-items:flex-start}
+.te .tl{flex:1.5;min-width:0;display:grid;gap:12px}
+.te .tr{flex:1;min-width:250px;position:sticky;top:0;align-self:flex-start;z-index:3;background:var(--bg);padding-bottom:6px}
+.te .mini{height:auto;aspect-ratio:2.2/1}
+@media(max-width:760px){.te{flex-direction:column-reverse;align-items:stretch}.te .tr{min-width:0}}
+.eb{background:#0003;border-radius:4px;padding:10px}
+.ebh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:#fff}
+.dlg .gtog{display:flex;gap:5px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text);cursor:pointer}
+.rmp{display:grid;gap:10px;background:var(--dk);border-radius:4px;padding:12px 14px}
+.rbar{position:relative;height:30px;border-radius:3px;border:1px solid #000;cursor:copy;margin-bottom:20px;touch-action:none}
+.rs{position:absolute;top:100%;width:14px;height:18px;margin:2px 0 0 -7px;cursor:ew-resize;background:#ccc;clip-path:polygon(50% 0,100% 32%,100% 100%,0 100%,0 32%);touch-action:none}
+.rs.on{background:var(--blue)}.rs b{position:absolute;left:2px;right:2px;bottom:2px;height:9px}
+.rctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--dim)}
+.dlg .rctl label{display:flex;gap:6px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text)}
+.rctl input[type=color]{width:46px;height:26px;border:0;background:none;padding:0;cursor:pointer}
+.rhint{font-size:11px;color:var(--dim)}
+.ebi{margin-top:10px;padding-top:10px;border-top:1px solid #ffffff14}
+.gtog{gap:6px}.gtog .btn{padding:3px 8px;font-size:11px}
+.dlg .gtog label{display:flex;gap:5px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text);cursor:pointer}
+.iname{color:#fff;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rbox2{position:relative;aspect-ratio:16/9;width:100%;background:repeating-conic-gradient(#0004 0 25%,#0000 0 50%) 0 0/16px 16px,var(--dk);border:1px solid #000;touch-action:none;user-select:none}
+.rimg{position:absolute;outline:1px dashed var(--blue);cursor:move}
+.rh{position:absolute;width:10px;height:10px;background:var(--blue);border:1px solid #000;margin:-5px 0 0 -5px}
+.rh[data-d=nw]{left:0;top:0;cursor:nwse-resize}.rh[data-d=n]{left:50%;top:0;cursor:ns-resize}.rh[data-d=ne]{left:100%;top:0;cursor:nesw-resize}
+.rh[data-d=e]{left:100%;top:50%;cursor:ew-resize}.rh[data-d=se]{left:100%;top:100%;cursor:nwse-resize}.rh[data-d=s]{left:50%;top:100%;cursor:ns-resize}
+.rh[data-d=sw]{left:0;top:100%;cursor:nesw-resize}.rh[data-d=w]{left:0;top:50%;cursor:ew-resize}
+.iedit{margin-top:8px}
+.dlg .itog{display:flex;gap:5px;align-items:center;margin:0;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text);cursor:pointer}
+.item.off,.card.off{opacity:.4;filter:grayscale(1);cursor:not-allowed}.hero.off{filter:grayscale(1)}
+.play:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(1)}
+.frow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0;color:var(--text)}
+.mini{--zoom:.22}
+.nbox{position:relative;display:inline-block;max-width:100%;line-height:0;touch-action:none;user-select:none;background:repeating-conic-gradient(#0004 0 25%,#0000 0 50%) 0 0/16px 16px,var(--dk);border:1px solid #000}
+.nimg{max-width:100%;max-height:230px;display:block;pointer-events:none}
+.ng{position:absolute;display:block}
+.ng[data-n=l],.ng[data-n=r]{top:0;bottom:0;width:11px;margin-left:-5px;cursor:ew-resize;background:linear-gradient(var(--blue),var(--blue)) center/1px 100% no-repeat}
+.ng[data-n=t],.ng[data-n=b]{left:0;right:0;height:11px;margin-top:-5px;cursor:ns-resize;background:linear-gradient(var(--blue),var(--blue)) center/100% 1px no-repeat}
+#app{background:var(--bgm,transparent)}
+header .logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:17px;font-weight:700;letter-spacing:.5px;text-transform:none}
+header .tab{font-size:14px;letter-spacing:.6px}header .tab.on{color:var(--blue)}
+.sbtop{display:flex;gap:6px;padding:10px 10px 6px}
+.homebtn{flex:1;text-align:left;background:var(--hi);color:#fff;border:0;border-radius:3px;padding:8px 10px;font-size:13px;cursor:pointer}.homebtn:hover{filter:brightness(1.2)}
+.ibtn{background:transparent;border:0;color:var(--dim);width:30px;height:30px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+.ibtn:hover{color:#fff;background:#ffffff14}.ibtn.on{color:var(--blue)}
+.ibtn svg,.sbsearch>svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sbrow{display:flex;gap:4px;align-items:center;padding:0 10px 6px}.sbrow select{flex:1;padding:6px 8px;font-size:13px}
+.sbsearch{display:flex;align-items:center;gap:8px;margin:0 10px 8px;padding:0 3px 0 10px;background:var(--dk);border-radius:3px;color:var(--dim)}
+.sbsearch #search{flex:1;min-width:0;margin:0;padding:8px 0;background:transparent;border:0;outline:0;color:#fff;font-size:13px}
+.item{padding:3px 12px}.item img,.item .ph{width:18px;height:18px}
+.item.pl{color:#e9eff5;font-weight:600}
+.gh{display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:12px;letter-spacing:.4px}
+.gh i{font-style:normal;width:10px;text-align:center}.gh .cn{opacity:.6}.gh svg.bolt{width:11px;height:11px;fill:currentColor;opacity:.7}
+#ctx .cap{color:var(--dim);font-size:11px;cursor:default;pointer-events:none;letter-spacing:.5px}
+header{flex-direction:column;align-items:stretch;gap:0;height:auto;padding:0}
+.hr1{display:flex;align-items:center;height:24px;padding:4px 12px 0}
+.hr2{display:flex;align-items:center;gap:14px;height:36px;padding:0 12px 2px 8px}
+header .hr1 .logo{font-size:12px;gap:6px;letter-spacing:.3px}header .logo img{width:14px;height:14px}
+.nbtn{background:transparent;border:0;color:var(--dim);width:28px;height:28px;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.nbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nbtn:hover:not(:disabled){color:#fff;background:#ffffff14}.nbtn:disabled{opacity:.35;cursor:default}
+.hr2{gap:17px;padding:0 12px 2px 5px}
+.navb{display:flex;margin-right:-10px}
+.nbtn{width:27px}
+header .hr2 .tab{font-size:15px;letter-spacing:.5px}
+#help{flex:1;overflow:auto;background:var(--bgc,var(--bgf))}
+.st pre{background:var(--dk);padding:12px 14px;border-radius:4px;font-size:12px;color:var(--text);overflow:auto;line-height:1.55;margin:8px 0}
+.st ol,.st ul{color:var(--text);line-height:1.7;padding-left:22px}.st li{margin:5px 0}.st b{color:#fff}
+#netind{margin-left:auto;display:flex;align-items:center;justify-content:center;width:36px;height:22px;border-radius:4px;background:#4f9d2d;color:#fff;cursor:default;user-select:none}
+#netind svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+#netind .dot{fill:currentColor;stroke:none}#netind .wx{display:none;stroke-width:2}
+#netind.off{background:#555b64;color:#aab0b8}#netind.off .wx{display:block;stroke:#fff}
+#netind{height:18px;width:32px}#netind svg{width:15px;height:15px}
+.lf{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:3px;cursor:pointer;font-size:13px}.lf:hover{background:var(--hov)}.lf b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.lf .sz{margin-left:auto;color:var(--dim);font-size:12px;white-space:nowrap}.lf .btn{padding:3px 9px;font-size:11px}
+.lfl{max-height:46vh;overflow:auto;background:var(--dk);border-radius:4px;padding:4px}
+.crumbs{font-size:13px;color:var(--dim)}.crumbs a{color:var(--blue);cursor:pointer}.crumbs a:hover{text-decoration:underline}
+.ver{align-self:flex-end;margin-bottom:1px;font-size:9px;font-weight:600;letter-spacing:.3px;color:var(--dim)}
+#netind{margin-left:8px}
+.bellb{margin-left:auto;display:flex;align-items:center;justify-content:center;gap:3px;min-width:32px;height:18px;padding:0 6px;border:0;border-radius:4px;background:#2f7fe0;color:#fff;cursor:pointer;font-size:10px;font-weight:700}
+.bellb svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.bellb:hover{filter:brightness(1.14)}
+.bellb.has{box-shadow:0 0 0 2px #ffb74d99}
+#notif{display:none;position:fixed;top:30px;right:10px;z-index:36;width:370px;max-width:92vw;max-height:72vh;overflow:auto;background:var(--bg);color:var(--text);border:1px solid var(--hi);border-radius:6px;box-shadow:0 8px 28px #000a;font-size:13px}
+#notif.on{display:block}
+#notif .nh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--ov2);font-weight:700;color:var(--tw)}
+#notif .ni{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--ov1)}
+#notif .ni .tx{flex:1;min-width:0}#notif .ni b{display:block;color:var(--tw)}#notif .ni small{color:var(--dim)}
+#notif .nf{padding:10px 14px;color:var(--dim);font-size:12px}
+/* ===== store ===== */
+#store{flex:1;overflow:auto;background:var(--bgc,var(--bgf));display:none}
+#store .stw{max-width:1020px;margin:0 auto;padding:0 18px}
+.sth{position:sticky;top:0;z-index:6;background:#171a21ee;backdrop-filter:blur(8px);border-bottom:1px solid #0008}
+.stbar{display:flex;align-items:center;gap:18px;height:46px}
+.snav{display:flex;gap:2px;flex-wrap:wrap}
+.snav a{padding:8px 14px;color:var(--text);font-size:13px;cursor:pointer;border-radius:2px;user-select:none}
+.snav a:hover,.snav a.on{background:#ffffff1f;color:#fff}
+.ssearch{margin-left:auto;display:flex;align-items:center;background:var(--srch);border-radius:2px;padding:0 10px;width:260px;max-width:40%}
+.ssearch input{flex:1;min-width:0;background:none;border:0;outline:0;color:#fff;padding:7px 4px;font-size:13px}
+.ssearch input::placeholder{color:#9fc2d9}
+.stbody{padding-top:20px;padding-bottom:60px}
+.shd{margin:28px 0 10px;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;display:flex;align-items:center;gap:10px;scroll-margin-top:60px}
+.shd small{color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px}
+.sfw{position:relative}
+.sfeat{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);min-height:337px;background:linear-gradient(135deg,#0005,#0009),var(--panelf);border-radius:3px;overflow:hidden;box-shadow:0 0 14px #000a}
+.sfl{position:relative;background:var(--dk) center/cover no-repeat;cursor:pointer;min-height:260px}
+.sarr{position:absolute;top:50%;margin-top:-26px;width:32px;height:52px;border:0;border-radius:2px;background:#000a;color:#fff;cursor:pointer;padding:0;font-size:14px;opacity:0;transition:opacity .15s}
+.sfl:hover .sarr{opacity:1}.sarr:hover{background:#000d}.sarr.l{left:8px}.sarr.r{right:8px}
+.sfr{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.sfr h3{margin:0;font-size:24px;color:#fff;font-weight:400}
+.sfs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.sfs i{display:block;aspect-ratio:16/9;background:var(--dk) center/cover no-repeat;border-radius:2px}
+.sfd{margin:0;font-size:13px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
+.sfl2{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.sfoot{display:flex;align-items:center;gap:10px;margin-top:auto;justify-content:flex-end}
+.sdots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.sdots i{width:16px;height:9px;border-radius:2px;background:#ffffff33;cursor:pointer}.sdots i.on{background:#ffffffaa}
+.sprice{display:inline-block;background:#000a;color:#c6d4df;padding:6px 10px;border-radius:2px;font-size:13px;white-space:nowrap}
+.stbtn{padding:7px 22px;font-size:13px}.stbtn.big{padding:10px 34px;font-size:15px}
+.stbtn.own{background:linear-gradient(90deg,#47bfff,#1a44c2)}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.scard{background:#0004;border-radius:3px;overflow:hidden;cursor:pointer;transition:transform .12s,background .12s}
+.scard:hover{transform:translateY(-2px);background:#ffffff14}
+.scimg{aspect-ratio:460/215;background:var(--dk) center/cover no-repeat}
+.scb{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.scb b{flex:1;min-width:0;color:#fff;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stagrow{display:flex;flex-wrap:wrap;gap:6px}
+.schip{display:inline-block;background:#67c1f526;color:var(--blue);padding:5px 10px;border-radius:2px;font-size:12px;cursor:pointer}
+.schip:hover,.schip.on{background:#67c1f566;color:#fff}.schip small{color:var(--dim);margin-left:5px}
+.srow{display:flex;align-items:center;gap:14px;background:#0003;margin-bottom:6px;padding:6px;cursor:pointer;border-radius:2px}
+.srow:hover{background:#ffffff14}
+.srimg{width:184px;aspect-ratio:460/215;flex:none;background:var(--dk) center/cover no-repeat;border-radius:2px}
+.srt{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.srt b{color:#fff;font-weight:400;font-size:16px}.srt small{color:var(--dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sown{color:#8fd35a;font-size:12px}
+.srd{width:110px;text-align:right;color:var(--dim);font-size:12px}.srp{width:70px;text-align:right}
+.scrumb{font-size:12px;color:var(--dim)}.scrumb a{cursor:pointer;color:var(--blue)}.scrumb a:hover{color:#fff}
+.stt{margin:8px 0 14px;font-size:28px;font-weight:400;color:#fff}
+.sdet{display:grid;grid-template-columns:minmax(0,1fr) 324px;gap:16px}
+.sdl{background:#0004;padding:8px;border-radius:3px;align-self:start}
+.smain{aspect-ratio:16/9;background:var(--dk) center/cover no-repeat;border-radius:2px}
+.sthumbs{display:flex;gap:6px;margin-top:8px;overflow-x:auto;padding-bottom:4px}
+.sthumbs i{flex:none;width:112px;aspect-ratio:16/9;background:var(--dk) center/cover no-repeat;cursor:pointer;opacity:.55;border:2px solid transparent;border-radius:2px}
+.sthumbs i.on,.sthumbs i:hover{opacity:1;border-color:#ffffffaa}
+.scap{aspect-ratio:460/215;background:var(--dk) center/cover no-repeat;border-radius:2px}
+.sdesc{font-size:13px;line-height:1.55;margin:10px 0}
+.sinfo{width:100%;font-size:12.5px;border-collapse:collapse}.sinfo td{padding:3px 0;vertical-align:top}
+.sinfo td:first-child{color:var(--dim);width:90px;text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+.sbuy{margin:22px 0;background:linear-gradient(90deg,#0006,#0003);border-radius:3px;padding:14px 18px}
+.sbuy h2{margin:0 0 12px;font-size:20px;font-weight:400;color:#fff}
+.sbr{display:flex;justify-content:flex-end;align-items:center;gap:12px}
+.sabout h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:#fff;border-bottom:1px solid #ffffff22;padding-bottom:6px;margin:0 0 12px}
+.sbody{white-space:pre-wrap;line-height:1.65;font-size:14px}
+.smsg{margin:0 0 14px;padding:10px 14px;border-radius:3px;background:#0006;font-size:13px}.smsg.bad{color:#e66}.smsg.ok{color:#8fd35a}
+.scimg,.srimg,.smain,.scap{position:relative;overflow:hidden}
+.sload,.sfail{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none}
+.sload{background:linear-gradient(100deg,#ffffff06 30%,#ffffff1c 50%,#ffffff06 70%) 0 0/200% 100%;animation:sshim 1.4s linear infinite}
+.sload i,.sloadtx i,.sico.ph i{display:inline-block;width:34px;height:34px;border:3px solid #ffffff2e;border-top-color:var(--blue);border-radius:50%;animation:sspin .8s linear infinite;box-sizing:border-box}
+.sfail{background:#2a0d0d99}.sfail b{font-size:60px;line-height:1;color:#ff5a5a;font-weight:700}.sfail span{font-size:12px;color:#f0a0a0;text-align:center;padding:0 8px}
+.scimg .sfail b{font-size:44px}.srimg .sfail b{font-size:36px}.srimg .sfail span{display:none}.srimg .sload i{width:24px;height:24px}
+.sloadtx{display:flex;align-items:center;gap:12px;color:var(--dim);font-size:14px}.sloadtx i{width:20px;height:20px}
+.sfailtx{display:flex;align-items:center;gap:16px;background:#2a0d0d88;border-radius:3px;padding:14px 18px}.sfailtx b{font-size:60px;line-height:1;color:#ff5a5a}.sfailtx small{color:#f0a0a0}
+.sdot{display:inline-block;width:10px;height:10px;border:2px solid #ffffff40;border-top-color:var(--blue);border-radius:50%;animation:sspin .8s linear infinite;vertical-align:-1px;margin-right:4px;box-sizing:border-box}
+.sico.ph{display:inline-flex;align-items:center;justify-content:center;background:#0006;vertical-align:middle}.sico.ph i{width:60%;height:60%;border-width:2px}
+.sico.ph.bad{background:#2a0d0d;color:#ff5a5a;font-weight:700;font-size:.7em}
+@keyframes sspin{to{transform:rotate(360deg)}}@keyframes sshim{to{background-position:-200% 0}}
+.sico{width:26px;height:26px;border-radius:3px;object-fit:cover;vertical-align:middle;margin-right:8px;flex:none}.stt .sico{width:46px;height:46px}.sfr h3 .sico{width:34px;height:34px}.srt b{display:flex;align-items:center}
+@media(max-width:820px){.sdet,.sfeat{grid-template-columns:1fr}.srimg{width:120px}.srd{display:none}}
+.bload{position:absolute;left:0;right:0;bottom:0;height:20px;display:flex;align-items:center;gap:7px;padding:0 8px;background:linear-gradient(transparent,rgba(0,0,0,.78));z-index:2;pointer-events:none}
+.bload .tr{flex:1;height:4px;border-radius:2px;background:#ffffff30;overflow:hidden}
+.bload .tr i{display:block;height:100%;width:0;background:linear-gradient(90deg,#75b022,#a4d007);transition:width .15s}
+.bload b{font-size:10px;color:#fff;min-width:28px;text-align:right;font-weight:700}
+.hero .bload{height:30px;padding:0 16px}.hero .bload .tr{height:6px}.hero .bload b{font-size:13px}
+.phbox{padding:18px;color:var(--dim);font-size:14px;line-height:1.6}.phbox b{color:#fff}
+#notif .nn{padding:11px 14px;border-bottom:1px solid var(--ov1)}
+#notif .nnh{display:flex;align-items:flex-start;gap:8px}#notif .nnh b{flex:1;color:var(--tw);font-size:14px;display:block}
+#notif .nnh button{padding:2px 8px;font-size:11px}
+#notif .nn small{color:var(--dim);font-size:11px}
+#notif .nnt{margin-top:6px;color:var(--text);line-height:1.5;word-break:break-word}
+#notif .nni{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#notif .nni img{width:100%;border-radius:3px;cursor:zoom-in;display:block}
+#notif .nlab{padding:6px 14px 0;font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim)}
+.ibw{display:inline-flex;flex-direction:column;align-items:stretch;gap:5px;vertical-align:top}
+.iprog{display:flex;align-items:center;gap:8px;min-width:120px}
+.ipb{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.ipb i{display:block;height:100%;width:0;background:linear-gradient(90deg,#75b022,#a4d007);transition:width .15s}
+.ipt{font-size:11px;color:var(--dim);min-width:32px;text-align:right}
+#instbox{position:fixed;right:16px;bottom:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;width:300px;max-width:calc(100vw - 32px)}
+#instbox .ic{background:var(--panelf);border:1px solid var(--hi);border-radius:4px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#instbox .ih{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+#instbox .in{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#instbox .is{font-size:11px;color:var(--dim);margin:3px 0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#instbox .ir{display:flex;align-items:center;gap:8px}
+#instbox .ir b{font-size:12px;color:#fff;min-width:36px;text-align:right}
+.adv table{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 10px}.adv th,.adv td{padding:4px 8px;text-align:left;border-bottom:1px solid #0004}.adv th{color:var(--dim);font-weight:400}.adv td{color:var(--text)}
+.adv h4{margin:14px 0 4px}.adv .adnote{font-size:12px;color:var(--dim);margin:2px 0 8px}.adv .ok{color:#8fd14f}.adv .bad{color:#e66}.adv .warn{color:#e6a23c}
+.adv .cool{background:#e6a23c22;border:1px solid #e6a23c66;color:#e6a23c;padding:6px 10px;border-radius:3px;margin:6px 0;font-size:13px}
+.adv .stats{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;margin:6px 0}.adv .stats b{display:block;color:#fff;font-size:18px;font-weight:400}
+.advcon{background:#0b0f14;color:#b7c4cf;font:12px/1.5 Consolas,"Courier New",monospace;height:250px;overflow:auto;padding:8px 10px;border-radius:3px;white-space:pre-wrap;word-break:break-word;border:1px solid #000}
+.advcon .w{color:#e6a23c}.advcon .e{color:#f66}.advcon .ok{color:#8fd14f}.advcon i{color:#6b7885;font-style:normal}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="hr1"><span class="logo"><img id="hicon" alt="" width="14" height="14" style="visibility:hidden" onload="this.style.visibility='visible'">Volt<small class="ver" id="ver"></small></span><button class="bellb" id="bellb" type="button" title="Notifications"><svg viewBox="0 0 20 20"><path d="M10 2.5a4.5 4.5 0 0 0-4.5 4.5c0 4-1.8 5.2-1.8 5.2h12.6S14.5 11 14.5 7A4.5 4.5 0 0 0 10 2.5Z"/><path d="M8.3 15.2a1.9 1.9 0 0 0 3.4 0"/></svg><b id="bcnt"></b></button><div id="netind" title="Connected to the internet"><svg viewBox="0 0 20 20"><path d="M2.5 7.5a10 10 0 0 1 15 0"/><path d="M5 10.5a6.5 6.5 0 0 1 10 0"/><path d="M7.5 13.5a3 3 0 0 1 5 0"/><circle class="dot" cx="10" cy="16.5" r="1.3"/><path class="wx" d="M12.5 11.5l5.5 5.5M18 11.5l-5.5 5.5"/></svg></div></div>
+    <div class="hr2"><span class="navb"><button class="nbtn" id="nback" title="Back (Alt+Left)" disabled><svg viewBox="0 0 16 16"><path d="M13 8H3M7.5 3.5 3 8l4.5 4.5"/></svg></button><button class="nbtn" id="nfwd" title="Forward (Alt+Right)" disabled><svg viewBox="0 0 16 16"><path d="M3 8h10M8.5 3.5 13 8l-4.5 4.5"/></svg></button></span><span class="tab" id="tstore">Store</span><span class="tab on" id="tlib">Library</span><span class="tab" id="tset">Settings</span><span class="tab" id="thelp">Help</span></div>
+  </header>
+  <div id="main">
+    <aside>
+      <div class="sbtop"><button class="homebtn" id="home0">Home</button><button class="ibtn" id="grid0" title="Home"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5"/><rect x="9" y="2" width="5" height="5"/><rect x="2" y="9" width="5" height="5"/><rect x="9" y="9" width="5" height="5"/></svg></button></div>
+      <div class="sbrow"><select id="typesel" class="fld"><option value="all">Games</option><option value="html">HTML games</option><option value="web">Websites</option></select>
+        <button class="ibtn" id="recbtn" title="Recently played first"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/></svg></button>
+        <button class="ibtn" id="rdybtn" title="Ready to play (hides websites while offline)"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M6.7 5.5 10.5 8l-3.8 2.5z"/></svg></button></div>
+      <div class="sbsearch"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg><input id="search" placeholder="Search"><button class="ibtn" id="filtbtn" title="Sort and groups"><svg viewBox="0 0 16 16"><path d="M2 4h12M4 8h8M6 12h4"/></svg></button></div>
+      <div id="list"></div>
+      <button class="btn" id="add">+ Add a game</button>
+      <select id="sortsel" hidden><option value="name">A-Z</option><option value="nameD">Z-A</option><option value="recent">Recently played</option><option value="most">Most played</option></select><button id="ng" hidden></button><span id="count" hidden></span>
+    </aside>
+    <div id="content"></div>
+  </div>
+  <div id="store"></div>
+  <div id="settings" style="display:none"></div>
+  <div id="help" style="display:none"></div>
+  <footer><span id="status">Ready</span><span id="net" style="margin-left:auto"></span></footer>
+</div>
+<div id="player"><div class="pb"><button class="btn" id="back">&larr; Library</button><span id="ptitle"></span><button class="btn" id="newtab" style="margin-left:auto">Open in new tab</button></div><iframe id="frame" allow="fullscreen; autoplay; gamepad"></iframe></div>
+<div id="notif"></div><div id="modal"></div>
+<div id="ctx"></div>
+
+<script>
+/* Layout (launcher.html sits NEXT TO the htmls folder):
+   launcher.html
+   htmls/
+     My Game/
+       info.txt        name: / tags: / open: / entry: / description:
+       icon.png        banner.jpg
+       game/index.html
+   Right-click a game for Properties. "+ Add a game" creates all of the above for you. */
+const $=s=>document.querySelector(s);
+const IMG=/\.(png|jpe?g|gif|webp)$/i;
+let games=[],selected=null,query="",root=null,rootName="htmls";
+
+/* ---- remember the chosen folder ---- */
+const db=()=>new Promise((res,rej)=>{const r=indexedDB.open("htmlgames",1);r.onupgradeneeded=()=>r.result.createObjectStore("k");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function kv(mode,val,key="root"){try{const d=await db();return await new Promise(res=>{const t=d.transaction("k","readwrite").objectStore("k");const q=mode==="set"?t.put(val,key):t.get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>res(null)})}catch(e){return null}}
+async function pick(){
+  if(!window.showDirectoryPicker){status("Your browser needs the File System Access API (use Chrome or Edge).");return}
+  try{const h=await showDirectoryPicker({mode:"readwrite"});let rt=h;
+    try{rt=await h.getDirectoryHandle("htmls");await kv("set",h,"base");await setBase(h)}catch(e){rt=h}
+    await kv("set",rt);await load(rt)}catch(e){}
+}
+async function restore(){
+  initBase();const h=await kv("get");if(!h)return render();
+  if(await h.queryPermission({mode:"readwrite"})==="granted")return load(h);
+  status("Click to re-allow access to your htmls folder");
+  $("#content").innerHTML=`<div class="empty"><h2>Welcome back</h2><p>Allow access to <b>${esc(h.name)}</b> to load your library.</p><button class="play" id="allow">Load library</button></div>`;
+  $("#allow").onclick=async()=>{if(await h.requestPermission({mode:"readwrite"})==="granted"){await initBase(true);load(h)}};
+}
+
+/* ---- info.txt ---- */
+function parseInfo(txt,fallback){
+  const o={name:"",description:"",tags:[],open:"launcher",entry:"",url:"",ribbon:""};let cur=null,tags="";const loose=[];
+  for(const line of txt.replace(/\r/g,"").split("\n")){
+    const m=line.match(/^\s*(name|title|description|desc|tags?|open|entry|url|link|ribbon|developer|short|released)\s*[:=]\s*(.*)$/i);
+    if(m){let k=m[1].toLowerCase();k=k==="title"?"name":k==="desc"?"description":k==="tag"?"tags":k==="link"?"url":k;cur=k;if(k==="tags")tags=m[2];else o[k]=m[2]}
+    else if(cur==="description")o.description+="\n"+line;
+    else if(!cur&&line.trim())loose.push(line.trim());
+  }
+  if(!o.name&&loose.length){o.name=loose[0];o.description=o.description||loose[1]||"";tags=tags||loose[2]||""}
+  o.tags=tags.split(/[,;#]+/).map(t=>t.trim()).filter(Boolean);
+  o.name=(o.name||fallback).trim();o.description=o.description.trim();o.entry=o.entry.trim();o.url=o.url.trim();o.ribbon=!/^(off|false|no|hide|0)/i.test(o.ribbon.trim());if(o.url&&!o.tags.some(t=>t.toLowerCase()==='website'))o.tags.push('Website');
+  o.open=/tab/i.test(o.open)?"tab":/ask/i.test(o.open)?"ask":"launcher";return o;
+}
+const infoText=o=>`name: ${o.name.replace(/\s+/g," ")}\ntags: ${o.tags.join(", ")}\nopen: ${o.open}\nentry: ${o.entry}\n${o.url?'url: '+o.url+'\nribbon: '+(o.ribbon===false?'off':'on')+'\n':''}description: ${o.description}\n`;
+
+/* ---- file helpers ---- */
+const put=async(d,n,data)=>{const w=await(await d.getFileHandle(n,{create:true})).createWritable();await w.write(data);await w.close()};
+async function copyDir(a,b){for await(const [n,h] of a.entries()){if(h.kind==="file")await put(b,n,await h.getFile());else await copyDir(h,await b.getDirectoryHandle(n,{create:true}))}}
+async function walk(d,pre,depth,out){for await(const [n,h] of d.entries()){if(h.kind==="file"&&/\.html?$/i.test(n))out.push([...pre,n]);else if(h.kind==="directory"&&depth<4)await walk(h,[...pre,n],depth+1,out)}}
+async function hasPath(d,p){try{const s=p.split("/");for(const x of s.slice(0,-1))d=await d.getDirectoryHandle(x);await d.getFileHandle(s.at(-1));return true}catch(e){return false}}
+async function toIndex(gd,parts){ /* renames the chosen html to index.html in place, returns its path */
+  let d=gd;for(const p of parts.slice(0,-1))d=await d.getDirectoryHandle(p);
+  const last=parts.at(-1);
+  if(last.toLowerCase()!=="index.html"){await put(d,"index.html",await(await d.getFileHandle(last)).getFile());await d.removeEntry(last);return[...parts.slice(0,-1),"index.html"].join("/")}
+  return parts.join("/");
+}
+async function setImg(dir,base,file){
+  if(!file)return;const old=[];
+  for await(const [n] of dir.entries())if(n.toLowerCase().startsWith(base+".")&&IMG.test(n))old.push(n);
+  for(const n of old)await dir.removeEntry(n);
+  const ext=(file.name.match(/\.(png|jpe?g|gif|webp)$/i)||[,"png"])[1].toLowerCase();
+  await put(dir,base+"."+ext,file);
+}
+
+/* ---- scanning ---- */
+async function load(r,sel){
+  root=r;rootName=r.name;status("Scanning "+r.name+"...");
+  games.forEach(g=>{g.icon&&URL.revokeObjectURL(g.icon);g.banner&&URL.revokeObjectURL(g.banner)});games=[];
+  for await(const [fname,h] of r.entries()){
+    if(h.kind!=="directory")continue;
+    try{
+      let icon,banner,txt,rootIdx=false;const subs=[];
+      for await(const [n,c] of h.entries()){
+        if(c.kind==="file"){
+          if(/\.txt$/i.test(n)&&(!txt||/^(info|about|details)\./i.test(n)))txt=c;
+          if(/^icon\./i.test(n)&&IMG.test(n))icon=c;
+          if(/^banner\./i.test(n)&&IMG.test(n))banner=c;
+          if(n.toLowerCase()==="index.html")rootIdx=true;
+        }else subs.push([n,c]);
+      }
+      const info=parseInfo(txt?await(await txt.getFile()).text():"",fname);
+      let entry=info.entry&&await hasPath(h,info.entry)?info.entry:null;
+      if(!entry){let gd=null;
+        for(const [n,c] of subs){try{await c.getFileHandle("index.html");if(gd===null||/^(game|html|web)$/i.test(n))gd=n}catch(e){}}
+        entry=gd!==null?gd+"/index.html":rootIdx?"index.html":null}
+      if(!entry&&!info.url)continue;
+      games.push({...info,folder:fname,dir:h,txtName:txt?txt.name:"info.txt",entry:entry||"",
+        icon:icon?URL.createObjectURL(await icon.getFile()):null,
+        banner:banner?URL.createObjectURL(await banner.getFile()):null});
+    }catch(e){console.warn(fname,e)}
+  }
+  instPhAttach();games.sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:"base"}));
+  await loadLib();checkNet();themeFromLib();selected=games.find(g=>g.folder===sel)||null;
+  status(games.length+" game(s) loaded from "+r.name);setTimeout(()=>{if(!window.__placeDone){window.__placeDone=1;placeCheck()}},400);render();if(view==="settings")renderSettings();if(view==="help")renderHelp();upd.ready=true;renderBell();maybeAutoCheck();
+}
+
+/* ---- ui ---- */
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const status=t=>$("#status").textContent=t;
+const rib=g=>g.url&&g.ribbon!==false?'<div class="rib"><b><i>&#8599;</i>WEB</b></div>':'';
+const gameUrl=g=>g.url||[rootName,g.folder,...g.entry.split("/")].map(encodeURIComponent).join("/");
+function filtered(){const q=query.toLowerCase().trim(),ty=lib.type||"all";
+  return games.filter(g=>g.ph||(ty==="all"||(ty==="web"?isWeb(g):!isWeb(g)))&&(!lib.ready||!blocked(g))&&(!q||(g.name+" "+g.description+" "+g.tags.join(" ")).toLowerCase().includes(q)))}
+function render(){
+  const f=sortGames(filtered());$("#count").textContent=games.length?`(${f.length})`:"";
+  renderList(f);
+  const c=$("#content");
+  if(!games.length){c.innerHTML=root
+    ?`<div class="empty"><h2>No games yet</h2><p>Nothing found in <b>${esc(rootName)}</b>. Add your first game:</p><button class="play" onclick="props()">+ Add a game</button></div>`
+    :`<div class="empty"><h2>No library selected</h2><p>Press <b>Select folder</b> and choose the folder that contains launcher.html and your <b>htmls</b> folder (the <b>Help</b> tab explains the setup). Each game gets its own folder inside htmls:</p><pre>launcher.html
+htmls/
+  My Game/
+    info.txt
+    icon.png
+    banner.jpg
+    game/index.html</pre><button class="play" onclick="pick()">Select folder</button></div>`;return}
+  if(selected&&selected.ph){const g=selected,o=inst.get(g.key)||{pct:0,phase:""};
+    c.innerHTML=`<div class="hero" style="${g.banner?`background-image:url('${g.banner}')`:""}"><h1 data-phn="${esc(g.key)}">${esc(g.name)}</h1>${barH(g.key,Math.max(o.pct,0))}</div>
+    <div class="bar"><button class="btn" id="home">All games</button></div>
+    <div class="phbox"><b>Installing this game profile</b><br><span data-phs="${esc(g.key)}">${esc(o.phase||"")}</span><br>It switches to the real game profile automatically when it's done.</div>`;
+    $("#home").onclick=()=>{selected=null;render()}}
+  else if(selected){const g=selected,i=games.indexOf(g);
+    c.innerHTML=`<div class="hero${blocked(g)?" off":""}" data-i="${i}" style="${g.banner?`background-image:url('${g.banner}')`:""}">${rib(g)}<h1>${esc(g.name)}</h1></div>
+    <div class="bar" data-i="${i}"><button class="play" id="go" ${blocked(g)?"disabled":""}>${blocked(g)?"Offline":"&#9654; Play"}</button><button class="btn" id="pr">Properties</button><button class="btn" id="delg">Delete</button><button class="btn" id="home">All games</button></div>
+    <div class="detail"><div class="desc">${esc(g.description||"No description.")}</div><div class="meta"><h4>Tags</h4>${g.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join("")||"<span style='color:var(--dim)'>None</span>"}${g.url?`<h4 style="margin-top:14px">Link</h4><div style="word-break:break-all;font-size:13px">${esc(g.url)}</div>`:""}</div></div>`;
+    $("#go").onclick=()=>launch(g);$("#pr").onclick=()=>props(g);$("#delg").onclick=()=>remove(g);
+    $("#home").onclick=()=>{selected=null;render()};
+    c.querySelectorAll(".tag").forEach(t=>t.onclick=()=>{query=t.textContent;$("#search").value=query;selected=null;render()});
+  }else{
+    c.innerHTML=`<h2 class="title">${query?"Results":"Library"}</h2><div class="grid">${f.map(g=>`<div class="card${blocked(g)?" off":""}" data-i="${games.indexOf(g)}"><div class="b" style="${g.banner?`background-image:url('${g.banner}')`:""}">${rib(g)}${g.ph?barH(g.key,Math.max((inst.get(g.key)||{}).pct,0)):""}</div><div class="t"${g.ph?` data-phn="${esc(g.key)}"`:""}>${esc(g.name)}<small>${esc(g.tags.join(", "))}</small></div></div>`).join("")||"<p style='color:var(--dim)'>Nothing matches your search.</p>"}</div>`;
+    c.querySelectorAll(".card").forEach(e=>e.onclick=()=>{selected=games[e.dataset.i];render()});
+  }
+}
+
+/* ---- playing ---- */
+const tab=g=>{if(blocked(g))return offMsg(g);window.open(gameUrl(g),"_blank")};
+function embed(g){$("#ptitle").textContent=g.name;$("#frame").src=gameUrl(g);$("#newtab").onclick=()=>tab(g);$("#player").classList.add("on")}
+function launch(g){if(blocked(g))return offMsg(g);bump(g);
+  if(g.url||g.open==="tab")return tab(g);
+  if(g.open==="ask"){modal(`<div class="dlg"><h3>${esc(g.name)}</h3><div class="body">How do you want to play?</div><div class="foot"><button class="btn" id="cx">Cancel</button><button class="btn" id="a1">Open in new tab</button><button class="play" id="a2">Play here</button></div></div>`);
+    $("#cx").onclick=closeModal;$("#a1").onclick=()=>{closeModal();tab(g)};$("#a2").onclick=()=>{closeModal();embed(g)};return}
+  embed(g);
+}
+$("#back").onclick=()=>{$("#frame").src="about:blank";$("#player").classList.remove("on")};
+
+/* diagnostics only (nothing here changes how a game opens): logs to Settings > Advanced > Console whether the game path resolves */
+const probeUrl=url=>new Promise(res=>{const l=document.createElement("link");l.rel="preload";l.as="script";let d=0;
+  const f=v=>{if(!d){d=1;l.remove();res(v)}};l.onload=()=>f(true);l.onerror=()=>f(false);l.href=url;document.head.appendChild(l);setTimeout(()=>f(null),2500)});
+async function placeCheck(){const g=games.find(x=>!x.ph&&!x.url&&x.entry);if(!g)return;const ok=await probeUrl(gameUrl(g));
+  dlLog("Game path check: "+gameUrl(g)+" -> "+(ok===false?"not found from "+location.href.replace(/^file:\/\//,"").slice(-70):ok?"found":"unknown"),ok===false?"w":"i")}
+
+/* ---- modal + context menu ---- */
+const modal=h=>{$("#modal").innerHTML=h;$("#modal").classList.add("on")};
+const closeModal=()=>{$("#modal").classList.remove("on");$("#modal").innerHTML=""};
+const ctx=$("#ctx");
+document.addEventListener("contextmenu",e=>{
+  const t=e.target.closest("[data-i]");if(!t){ctx.style.display="none";return}
+  e.preventDefault();const g=games[t.dataset.i];if(!g||g.ph){ctx.style.display="none";return}
+  ctx.innerHTML=`<div data-a="play">&#9654; Play</div><div data-a="tab">Open in new tab</div><hr><div data-a="fav">${lib.favs.includes(g.folder)?"Remove from favorites":"&#9733; Add to favorites"}</div><div data-a="grp">Add to group...</div>${lib.groups.map((x,i)=>x.games.includes(g.folder)?`<div data-a="ug" data-gi="${i}">Remove from ${esc(x.name)}</div>`:"").join("")}<hr><div data-a="props">Properties...</div><div data-a="files">Local files...</div><div data-a="del">Remove game...</div>`;
+  ctx.style.display="block";
+  ctx.style.left=Math.min(e.clientX,innerWidth-ctx.offsetWidth-4)+"px";ctx.style.top=Math.min(e.clientY,innerHeight-ctx.offsetHeight-4)+"px";
+  ctx.onclick=ev=>{const a=ev.target.dataset.a;if(a==="play")launch(g);if(a==="tab")tab(g);if(a==="props")props(g);if(a==="del")remove(g);if(a==="files")localFiles(g);if(a==="fav")toggleFav(g);if(a==="grp")pickGroup(g);if(a==="ug")ungroup(g,+ev.target.dataset.gi)};
+});
+document.addEventListener("click",()=>ctx.style.display="none");
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){ctx.style.display="none";closeModal()}});
+
+async function remove(g){
+  if(!g||g.ph)return;
+  if(!confirm(`Delete "${g.name}" and ALL of its files from the htmls folder? This can't be undone.`))return;
+  try{
+    if(await root.requestPermission({mode:"readwrite"})!=="granted")throw new Error("Write access to the htmls folder was denied.");
+    status(`Deleting "${g.name}"...`);
+    let err=null;
+    for(let t=0;t<3;t++){
+      try{await root.removeEntry(g.folder,{recursive:true});err=null;break}
+      catch(e){if(e&&e.name==="NotFoundError"){err=null;break}err=e;await new Promise(r=>setTimeout(r,500))}}
+    if(err)throw err;
+    let still=true;try{await root.getDirectoryHandle(g.folder)}catch(e){still=false}
+    if(still)throw new Error("The folder is still there. A file in it may be open in another program or tab.");
+    lib.favs=(lib.favs||[]).filter(f=>f!==g.folder);
+    (lib.groups||[]).forEach(x=>{x.games=x.games.filter(f=>f!==g.folder)});
+    delete lib.count[g.folder];if(lib.played)delete lib.played[g.folder];
+    const bk=profBase(g.folder).replace(/\s*\(\d+\)\s*$/,"").toLowerCase();
+    for(const k of Object.keys(lib.remote||{})){const r=lib.remote[k];if(k===bk||k===g.name.trim().toLowerCase()||(r&&r.folder===g.folder))delete lib.remote[k]}
+    if(selected===g)selected=null;
+    await saveLib();await load(root);
+    status(`Deleted "${g.name}" and its folder.`)
+  }catch(e){const m="Couldn't delete "+g.name+": "+(e&&e.message?e.message:e);status(m);alert(m)}
+}
+
+/* ---- add game / properties ---- */
+/* ---- reading an uploaded game profile: a folder or a .zip ---- */
+async function listFiles(d,pre,out,depth){for await(const [n,h] of d.entries()){if(h.kind==="file")out.push({path:pre+n,get:()=>h.getFile()});else if(depth<12)await listFiles(h,pre+n+"/",out,depth+1)}}
+async function readZip(file){
+  const buf=await file.arrayBuffer(),dv=new DataView(buf),u8=new Uint8Array(buf),td=new TextDecoder();let e=-1;
+  for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-65557);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)throw new Error("That doesn't look like a valid .zip file.");
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out=[];
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(p,true)!==0x02014b50)throw new Error("The .zip file looks damaged.");
+    const fl=dv.getUint16(p+8,true),me=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),us=dv.getUint32(p+24,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=td.decode(u8.subarray(p+46,p+46+nl)).replace(/\\/g,"/");p+=46+nl+xl+cl;
+    if(name.endsWith("/"))continue;
+    if(cs===0xFFFFFFFF||us===0xFFFFFFFF||lo===0xFFFFFFFF)throw new Error("Zip64 files aren't supported. Zip the folder again with a normal zip tool.");
+    if(fl&1)throw new Error("Password-protected zips aren't supported.");
+    out.push({path:name,get:async()=>{const ln=dv.getUint16(lo+26,true),lx=dv.getUint16(lo+28,true),st0=lo+30+ln+lx,data=u8.subarray(st0,st0+cs);
+      if(me===0)return new Blob([data]);
+      if(me===8)return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+      throw new Error("This zip uses a compression method Volt can't read (method "+me+").")}})}
+  return out}
+function detectProfile(list,fallback){
+  const clean=list.map(f=>({...f,path:f.path.replace(/^(\.\/|\/)+/,"")})).filter(f=>f.path&&!f.path.split("/").includes("..")&&!/(^|\/)(__MACOSX|\.DS_Store|Thumbs\.db)(\/|$)/.test(f.path));
+  const infos=clean.filter(f=>/(^|\/)info\.txt$/i.test(f.path));let prefix="";
+  if(infos.length){const dp=x=>x.path.split("/").length,mn=Math.min(...infos.map(dp)),tp=infos.filter(f=>dp(f)===mn);
+    if(tp.length>1)throw new Error(`That contains ${tp.length} game profiles. Upload one profile folder (or zip) at a time.`);
+    prefix=tp[0].path.slice(0,-8)}
+  else{const tops=new Set(clean.map(f=>f.path.split("/")[0]));if(tops.size===1&&clean.every(f=>f.path.includes("/")))prefix=[...tops][0]+"/"}
+  const files=clean.filter(f=>f.path.startsWith(prefix)).map(f=>({path:f.path.slice(prefix.length),get:f.get}));
+  return{files,folderName:prefix?prefix.replace(/\/$/,"").split("/").pop():fallback,info:files.find(f=>f.path.toLowerCase()==="info.txt")}}
+
+/* a folder counts as a game profile when it (or a folder inside it) has an info.txt with profile keys */
+async function isProfileDir(d){
+  const chk=async dir=>{for await(const [n,h] of dir.entries())if(h.kind==="file"&&n.toLowerCase()==="info.txt"){try{return /^\s*(name|title|entry|tags?|description)\s*[:=]/im.test(await(await h.getFile()).text())}catch(e){return false}}return false};
+  if(await chk(d))return true;
+  for await(const [n,h] of d.entries())if(h.kind==="directory"&&await chk(h))return true;
+  return false}
+/* ---- Local files: browse a game profile's folder ---- */
+async function localFiles(g){
+  const trail=[{n:g.folder,h:g.dir}];
+  const fmt=n=>n<1024?n+" B":n<1048576?(n/1024).toFixed(1)+" KB":(n/1048576).toFixed(1)+" MB";
+  const rel=f=>[rootName,...trail.map(t=>t.n),f].map(encodeURIComponent).join("/");
+  async function draw(){
+    const cur=trail.at(-1).h,ents=[];for await(const e of cur.entries())ents.push(e);
+    ents.sort((a,b)=>(a[1].kind===b[1].kind?0:a[1].kind==="directory"?-1:1)||a[0].localeCompare(b[0],undefined,{sensitivity:"base"}));
+    const rows=[];for(const [n,h] of ents){let sz="";if(h.kind==="file")try{sz=fmt((await h.getFile()).size)}catch(e){}
+      rows.push(`<div class="lf" data-k="${rows.length}"><span>${h.kind==="directory"?"&#128193;":"&#128196;"}</span><b>${esc(n)}</b><span class="sz">${sz}</span>${h.kind==="file"?'<button class="btn lo" type="button">Open</button><button class="btn ls" type="button">Save copy</button>':""}</div>`)}
+    modal(`<div class="dlg" style="width:min(680px,94vw)"><h3>Local files - ${esc(g.name)}</h3><div class="body">
+      <div class="crumbs">${trail.map((t,i)=>`<a data-c="${i}">${esc(t.n)}</a>`).join(" / ")}</div>
+      <div class="lfl">${rows.join("")||'<div style="color:var(--dim);padding:10px">This folder is empty.</div>'}</div>
+      <div class="rhint" style="font-size:12px;color:var(--dim)">A web page can't open a folder in your computer's file manager, so Volt shows the files here. <b>Show in file dialog</b> opens your system's file dialog at this folder.</div>
+    </div><div class="foot"><button class="btn" id="lfd">Show in file dialog</button><button class="btn" id="cx">Close</button></div></div>`);
+    $("#cx").onclick=closeModal;
+    $("#lfd").onclick=async()=>{try{await showOpenFilePicker({startIn:cur,multiple:true})}catch(e){}};
+    $("#modal").querySelectorAll("[data-c]").forEach(a=>a.onclick=()=>{trail.length=+a.dataset.c+1;draw()});
+    $("#modal").querySelectorAll(".lf").forEach(row=>{const [n,h]=ents[+row.dataset.k];
+      row.onclick=ev=>{if(ev.target.closest("button"))return;if(h.kind==="directory"){trail.push({n,h});draw()}};
+      if(h.kind==="file"){
+        row.querySelector(".lo").onclick=async()=>{const f=await h.getFile();window.open(/\.html?$/i.test(n)?rel(n):URL.createObjectURL(f),"_blank")};
+        row.querySelector(".ls").onclick=async()=>{const f=await h.getFile(),a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=n;a.click()}}})
+  }
+  draw()}
+function props(g){
+  if(!g&&!root){pick();return}
+  const st={icon:null,banner:null,src:null};
+  modal(`<div class="dlg"><h3>${g?"Properties - "+esc(g.name):"Add a game"}</h3><div class="body">${g?"":`<div><label>What do you want to do?</label><select id="fmode"><option value="new">Add a new game</option><option value="upd">Add or update from a whole game profile (folder or .zip)</option></select></div>`}<div id="newf" style="display:grid;gap:12px">
+    <div><label>Type</label><select id="fty"><option value="game">Game (HTML file or folder)</option><option value="web">Website link</option></select></div><div class="imgs"><div><label>Icon</label><div class="pv" id="pvi">Choose</div></div><div style="flex:1"><label>Banner</label><div class="pv" id="pvb">Choose</div></div></div>
+    <div><label>Name</label><input type="text" id="fn"></div>
+    <div><label>Description</label><textarea id="fd"></textarea></div>
+    <div><label>Search tags (comma separated)</label><input type="text" id="ft"></div>
+    <div id="urow"><label>Website address</label><input type="text" id="fu" placeholder="https://scratch.mit.edu"><label style="margin-top:10px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);cursor:pointer"><input type="checkbox" id="frib"> Show the WEB ribbon on this profile</label></div><div id="orow"><label>When pressing Play</label><select id="fo"><option value="launcher">Open inside the launcher</option><option value="tab">Open in a new tab</option><option value="ask">Ask me each time</option></select></div>
+    <div id="frow"><label>Game files${g?" (leave empty to keep the current ones)":""}</label><div class="drop" id="drop">Drop an HTML file, a game folder or a whole game profile folder here<br><button class="btn" id="bf">Choose HTML file</button><button class="btn" id="bd">Choose folder</button><div id="src" style="margin-top:8px;color:#fff"></div><div id="mp"></div></div></div>
+    </div>${g?"":`<div id="updf" style="display:none"><div class="drop" id="udrop">Drop a game profile folder or a .zip here<br><button class="btn" id="ubd">Choose folder</button><button class="btn" id="ubz">Choose .zip</button><div id="usrc" style="margin-top:8px;color:#fff"></div></div><div class="rhint" style="margin-top:8px;font-size:12px;color:var(--dim)">Upload a whole game profile (the folder with info.txt, icon, banner and the game folder), either as a folder or as a .zip of it. If a game with the same name is already in your library, its profile is replaced with the uploaded one. A profile with a new name is added as a new game.</div></div>`}<div id="err" style="font-size:13px"></div>
+  </div><div class="foot"><button class="btn" id="cx">Cancel</button><button class="play" id="ok">Save</button></div></div>`);
+  const msg=(t,bad=1)=>{$("#err").style.color=bad?"#e66":"#9fc2d9";$("#err").textContent=t};
+  $("#fn").value=g?.name||"";$("#fd").value=g?.description||"";$("#ft").value=g?g.tags.join(", "):"";$("#fo").value=g?g.open||"launcher":"tab";
+  $("#fty").value=g?.url?"web":"game";$("#fty").disabled=!!g;$("#fu").value=g?.url||"";$("#frib").checked=g?g.ribbon!==false:true;
+  const sync=()=>{const w=$("#fty").value==="web";$("#urow").style.display=w?"":"none";$("#orow").style.display=w?"none":"";$("#frow").style.display=w?"none":"";
+    if(w&&!/website/i.test($("#ft").value))$("#ft").value=($("#ft").value.trim()?$("#ft").value.trim()+", ":"")+"Website"};
+  $("#fty").onchange=sync;sync();
+  for(const [id,key,url] of [["pvi","icon",g?.icon],["pvb","banner",g?.banner]]){
+    const el=$("#"+id);if(url){el.style.backgroundImage=`url(${url})`;el.textContent=""}
+    el.onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="image/png,image/jpeg,image/gif,image/webp";
+      i.onchange=()=>{const f=i.files[0];if(!f)return;st[key]=f;el.style.backgroundImage=`url(${URL.createObjectURL(f)})`;el.textContent=""};i.click()};
+  }
+  async function setSrc(h){
+    if(!g&&(h.kind==="file"?/\.zip$/i.test(h.name):await isProfileDir(h))){$("#fmode").value="upd";setMode();return setUpd(h)}
+    st.src=null;$("#mp").innerHTML="";$("#src").textContent="";msg("",0);
+    if(h.kind==="file"){
+      const f=await h.getFile();if(!/\.html?$/i.test(f.name))return msg("That isn't an .html file.");
+      st.src={kind:"file",h};$("#src").textContent=`HTML file: ${f.name} - will be saved as index.html`;return}
+    const list=[];await walk(h,[],0,list);
+    if(!list.length)return msg("No .html files found in that folder.");
+    const idx=list.filter(p=>p.at(-1).toLowerCase()==="index.html").sort((a,b)=>a.length-b.length)[0];
+    st.src={kind:"dir",h,main:idx||list[0]};
+    if(idx)$("#src").textContent=`Folder: ${h.name} - index.html found${idx.length>1?" ("+idx.join("/")+")":""}. Contents are copied as they are.`;
+    else{$("#src").textContent=`Folder: ${h.name} - no index.html found. Pick the main HTML file; it will be renamed to index.html:`;
+      $("#mp").innerHTML=`<select id="mpsel" style="margin-top:8px">${list.map((p,i)=>`<option value="${i}">${esc(p.join("/"))}</option>`).join("")}</select>`;
+      $("#mpsel").onchange=e=>st.src.main=list[e.target.value]}
+  }
+  $("#bf").onclick=async()=>{try{const [h]=await showOpenFilePicker({types:[{description:"HTML",accept:{"text/html":[".html",".htm"]}}]});await setSrc(h)}catch(e){}};
+  $("#bd").onclick=async()=>{try{await setSrc(await showDirectoryPicker())}catch(e){}};
+  const drop=$("#drop");
+  drop.ondragover=e=>{e.preventDefault();drop.classList.add("over")};
+  drop.ondragleave=()=>drop.classList.remove("over");
+  drop.ondrop=e=>{e.preventDefault();drop.classList.remove("over");
+    const it=[...e.dataTransfer.items].find(i=>i.kind==="file");if(!it||!it.getAsFileSystemHandle)return msg("Drag and drop isn't supported here, use the buttons.");
+    it.getAsFileSystemHandle().then(setSrc)};
+  $("#cx").onclick=closeModal;
+  const setMode=()=>{const u=$("#fmode").value==="upd";$("#newf").style.display=u?"none":"grid";$("#updf").style.display=u?"block":"none";$("#ok").textContent=u?"Update":"Save";msg("",0)};
+  if(!g)$("#fmode").onchange=setMode;
+  async function setUpd(h){
+    st.upd=null;$("#usrc").textContent="";$("#ok").textContent="Update";msg("",0);
+    try{
+      let list,fb;
+      if(h.kind==="file"){const f=await h.getFile();if(!/\.zip$/i.test(f.name))return msg("Choose a .zip file or a folder.");list=await readZip(f);fb=f.name.replace(/\.zip$/i,"")}
+      else{list=[];await listFiles(h,"",list,0);fb=h.name}
+      const pr=detectProfile(list,fb);if(!pr.files.length)return msg("No files found in that upload.");
+      const pi=pr.info?parseInfo(await(await pr.info.get()).text(),pr.folderName):{name:pr.folderName},lc=x=>String(x).trim().toLowerCase();
+      const match=games.find(x=>lc(x.folder)===lc(pr.folderName))||games.find(x=>lc(x.name)===lc(pi.name))||null;
+      if(match&&h.kind==="directory"&&await h.isSameEntry(match.dir))return msg("That is the folder already in your library. Choose the new version instead.");
+      st.upd={...pr,pi,match};$("#ok").textContent=match?"Update":"Add game";
+      $("#usrc").textContent=`Found "${pi.name}" (${pr.files.length} files). `+(match?`It will replace the existing profile "${match.name}".`:"No game with that name yet, so it will be added as a new profile.");
+    }catch(e){msg(e.message||String(e))}
+  }
+  async function doUpdate(){
+    const u=st.upd;if(!u)return msg("Choose a profile folder or a .zip first.");
+    const m=u.match;
+    if(m&&!confirm(`Replace the profile "${m.name}" with the uploaded one? Files that are not in the upload will be deleted from its folder.`))return;
+    $("#ok").disabled=true;msg("Updating...",0);
+    try{const folder=await writeProfile(u,t=>msg(t,0));closeModal();await load(root,folder);status(`${m?"Updated":"Added"} "${u.pi.name}" (${u.files.length} files).`)}
+    catch(e){console.error(e);msg(e.message||String(e));$("#ok").disabled=false}
+  }
+  if(!g){
+  $("#ubd").onclick=async()=>{try{await setUpd(await showDirectoryPicker())}catch(e){}};
+  $("#ubz").onclick=async()=>{try{const [h]=await showOpenFilePicker({types:[{description:"Zip",accept:{"application/zip":[".zip"]}}]});await setUpd(h)}catch(e){}};
+  const ud=$("#udrop");
+  ud.ondragover=e=>{e.preventDefault();ud.classList.add("over")};ud.ondragleave=()=>ud.classList.remove("over");
+  ud.ondrop=e=>{e.preventDefault();ud.classList.remove("over");const it=[...e.dataTransfer.items].find(x=>x.kind==="file");
+    if(!it||!it.getAsFileSystemHandle)return msg("Drag and drop isn't supported here, use the buttons.");it.getAsFileSystemHandle().then(setUpd)}
+  }
+  $("#ok").onclick=async()=>{
+    if(!g&&$("#fmode").value==="upd")return doUpdate();
+    const name=$("#fn").value.trim();
+    if(!name)return msg("Give the game a name.");
+    const web=$("#fty").value==="web";let url="";
+    if(web){url=$("#fu").value.trim();if(url&&!/^[a-z][a-z0-9+.-]*:/i.test(url))url="https://"+url;
+      try{if(!/^https?:$/.test(new URL(url).protocol))throw 0}catch(e){return msg("Enter a valid web address, e.g. https://scratch.mit.edu")}}
+    if(!g&&!web&&!st.src)return msg("Add a game file or folder first.");
+    if(g&&st.src&&!confirm("Replace the current game files with the new ones?"))return;
+    $("#ok").disabled=true;msg("Saving...",0);
+    try{
+      if(await root.requestPermission({mode:"readwrite"})!=="granted")throw new Error("Write access to the htmls folder was denied.");
+      let dir,folder,entry=g?.entry||"";
+      if(g){dir=g.dir;folder=g.folder}
+      else{
+        const base=name.replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g," ").trim().replace(/^\.+|[. ]+$/g,"")||"Game";
+        const has=async n=>{try{await root.getDirectoryHandle(n);return true}catch(e){return false}};
+        folder=base;let n=2;while(await has(folder))folder=`${base} (${n++})`;
+        dir=await root.getDirectoryHandle(folder,{create:true});
+      }
+      if(!web&&st.src){
+        try{await dir.removeEntry("game",{recursive:true})}catch(e){}
+        const gd=await dir.getDirectoryHandle("game",{create:true});
+        if(st.src.kind==="file"){await put(gd,"index.html",await st.src.h.getFile());entry="game/index.html"}
+        else{await copyDir(st.src.h,gd);entry="game/"+await toIndex(gd,st.src.main)}
+      }
+      await setImg(dir,"icon",st.icon);await setImg(dir,"banner",st.banner);
+      await put(dir,g?.txtName||"info.txt",infoText({name,description:$("#fd").value.trim(),tags:(t=>web&&!t.some(x=>x.toLowerCase()==="website")?[...t,"Website"]:t)($("#ft").value.split(/[,;#]+/).map(t=>t.trim()).filter(Boolean)),open:web?"launcher":$("#fo").value,entry:web?"":entry,url,ribbon:$("#frib").checked}));
+      closeModal();await load(root,folder);
+    }catch(e){console.error(e);msg(e.message||String(e));$("#ok").disabled=false}
+  };
+}
+
+$("#search").oninput=e=>{query=e.target.value;if(selected&&!filtered().includes(selected))selected=null;render()};
+$("#add").onclick=()=>props();
+/* ===== favorites, groups, sorting (saved in htmls/library.json) ===== */
+const lib0=()=>({favs:[],groups:[],sort:"name",played:{},count:{},theme:"",undo:""});
+let lib=lib0();
+async function loadLib(){try{lib={...lib0(),...JSON.parse(await(await(await root.getFileHandle("library.json")).getFile()).text())}}catch(e){lib=lib0()}
+  $("#sortsel").value=lib.sort;syncSb()}
+const saveLib=async()=>{if(root)try{await put(root,"library.json",JSON.stringify(lib,null,1))}catch(e){status("Couldn't save library.json: "+e.message)}};
+const bump=g=>{lib.played[g.folder]=Date.now();lib.count[g.folder]=(lib.count[g.folder]||0)+1;saveLib()};
+/* any game tagged "Website" is greyed out and can't be played while offline */
+let net=navigator.onLine;
+const isWeb=g=>g.tags.some(t=>t.toLowerCase()==="website");
+const blocked=g=>lib.offlineLock!==false&&!net&&isWeb(g);
+const offMsg=g=>status("You're offline - "+g.name+" is a website and can't be opened until you reconnect.");
+const netUi=()=>{const ni=$("#netind");if(ni){ni.classList.toggle("off",!net);ni.title=net?"Connected to the internet":"No internet connection"}$("#net").textContent=net||lib.offlineLock===false?"":"Offline - website games are disabled until you reconnect"};
+async function checkNet(){let ok=navigator.onLine;
+  if(ok&&lib.offlineLock!==false)try{await Promise.any(["https://www.gstatic.com/generate_204","https://1.1.1.1/cdn-cgi/trace"].map(u=>fetch(u,{mode:"no-cors",cache:"no-store",signal:AbortSignal.timeout(5000)})))}catch(e){ok=false}
+  const ch=ok!==net;net=ok;netUi();if(ch)render()}
+addEventListener("online",checkNet);addEventListener("offline",checkNet);setInterval(checkNet,30000);setTimeout(checkNet,0);
+function sortGames(a){const s=lib.sort,c=[...a],n=(x,y)=>x.name.localeCompare(y.name,undefined,{sensitivity:"base"});
+  if(s==="nameD")return c.sort((x,y)=>n(y,x));
+  if(s==="recent")return c.sort((x,y)=>(lib.played[y.folder]||0)-(lib.played[x.folder]||0)||n(x,y));
+  if(s==="most")return c.sort((x,y)=>(lib.count[y.folder]||0)-(lib.count[x.folder]||0)||n(x,y));
+  return c.sort(n)}
+const BOLT='<svg class="bolt" viewBox="0 0 12 12"><path d="M7 0 1 7h4l-1 5 6-7H6z"/></svg>';
+const itemH=g=>`<div class="item ${g===selected?"sel":""}${blocked(g)?" off":""}${lib.count[g.folder]?" pl":""}" data-i="${games.indexOf(g)}">${g.icon?`<img src="${g.icon}">`:`<div class="ph"></div>`}<span${g.ph?` data-phn="${esc(g.key)}"`:""}>${esc(g.name)}</span></div>`;
+function renderList(f){
+  syncSb();
+  const q=query.trim(),ty=lib.type||"all",act=!!(q||ty!=="all"||lib.ready),L=$("#list");
+  const sec=(title,arr,tot,key,col,auto,gi)=>`<div class="gh" data-s="${key}"${gi!==undefined?` data-g="${gi}"`:""}><i>${col&&!act?"+":"&minus;"}</i><span>${title}</span><span class="cn">(${arr.length===tot?tot:arr.length+"/"+tot})</span>${auto?BOLT:""}</div>`+(col&&!act?"":arr.map(itemH).join(""));
+  const fv=g=>!g.ph&&lib.favs.includes(g.folder),loose=g=>!g.ph&&!fv(g)&&!lib.groups.some(x=>x.games.includes(g.folder));
+  let h="";const ins=f.filter(g=>g.ph);if(ins.length)h+=sec("Installing",ins,ins.length,"ins",false);const fav=f.filter(fv),favTot=games.filter(fv).length;
+  if(fav.length||(!act&&favTot))h+=sec("Favorites",fav,favTot,"fav",lib.colFav);
+  lib.groups.forEach((gr,gi)=>{const m=f.filter(g=>gr.games.includes(g.folder)),tot=games.filter(g=>gr.games.includes(g.folder)).length;if(m.length||!act)h+=sec(esc(gr.name),m,tot,"g"+gi,gr.collapsed,gr.auto,gi)});
+  const un=f.filter(loose);if(un.length)h+=sec("Uncategorized",un,games.filter(loose).length,"un",lib.colUn);
+  L.innerHTML=h;
+  L.querySelectorAll(".item").forEach(e=>e.onclick=()=>{selected=games[e.dataset.i];render()});
+  L.querySelectorAll(".gh").forEach(e=>e.onclick=()=>{const k=e.dataset.s;if(k==="ins")return;if(k==="fav")lib.colFav=!lib.colFav;else if(k==="un")lib.colUn=!lib.colUn;else{const x=lib.groups[+k.slice(1)];x.collapsed=!x.collapsed}saveLib();render()});
+}
+function syncSb(){$("#typesel").value=lib.type||"all";$("#recbtn").classList.toggle("on",lib.sort==="recent");$("#rdybtn").classList.toggle("on",!!lib.ready)}
+const toggleFav=g=>{const i=lib.favs.indexOf(g.folder);i<0?lib.favs.push(g.folder):lib.favs.splice(i,1);saveLib();render()};
+const ungroup=(g,i)=>{const x=lib.groups[i];x.games=x.games.filter(f=>f!==g.folder);saveLib();render()};
+function newGroup(first){const n=(prompt("New group name")||"").trim();if(!n)return false;lib.groups.push({name:n,games:first?[first]:[],collapsed:false});saveLib();render();return true}
+function pickGroup(g){
+  modal(`<div class="dlg"><h3>Add "${esc(g.name)}" to a group</h3><div class="body">${lib.groups.map((x,i)=>`<button class="btn" data-gi="${i}" style="text-align:left">${esc(x.name)}${x.games.includes(g.folder)?" &#10003;":""}</button>`).join("")}<button class="btn" id="gnew">+ New group...</button></div><div class="foot"><button class="btn" id="cx">Close</button></div></div>`);
+  $("#cx").onclick=closeModal;
+  $("#modal").querySelectorAll("[data-gi]").forEach(b=>b.onclick=()=>{const x=lib.groups[b.dataset.gi];if(!x.games.includes(g.folder))x.games.push(g.folder);saveLib();closeModal();render()});
+  $("#gnew").onclick=()=>{closeModal();newGroup(g.folder)};
+}
+const showCtx=e=>{ctx.style.display="block";ctx.style.left=Math.min(e.clientX,innerWidth-ctx.offsetWidth-4)+"px";ctx.style.top=Math.min(e.clientY,innerHeight-ctx.offsetHeight-4)+"px"};
+document.addEventListener("contextmenu",e=>{
+  const t=e.target.closest("[data-g]");if(!t)return;e.preventDefault();const gi=+t.dataset.g;
+  ctx.innerHTML=`<div data-a="rn">Rename group...</div><div data-a="dg">Delete group</div>`;showCtx(e);
+  ctx.onclick=ev=>{const a=ev.target.dataset.a;
+    if(a==="rn"){const n=(prompt("Group name",lib.groups[gi].name)||"").trim();if(n){lib.groups[gi].name=n;saveLib();render()}}
+    if(a==="dg"&&confirm("Delete this group? The games stay in your library.")){lib.groups.splice(gi,1);saveLib();render()}};
+});
+$("#sortsel").onchange=e=>{lib.sort=e.target.value;saveLib();render()};
+$("#home0").onclick=$("#grid0").onclick=()=>{selected=null;query="";$("#search").value="";setView("library");render()};
+$("#typesel").onchange=e=>{lib.type=e.target.value;saveLib();render()};
+$("#recbtn").onclick=()=>{lib.sort=lib.sort==="recent"?"name":"recent";$("#sortsel").value=lib.sort;saveLib();render()};
+$("#rdybtn").onclick=()=>{lib.ready=!lib.ready;saveLib();render()};
+$("#filtbtn").onclick=e=>{e.stopPropagation();const r=e.currentTarget.getBoundingClientRect(),mk=(v,l)=>`<div data-a="s:${v}">${lib.sort===v?"&#10003; ":"&nbsp;&nbsp;&nbsp;&nbsp;"}${l}</div>`;
+  ctx.innerHTML=`<div class="cap">SORT BY</div>`+mk("name","Alphabetical (A-Z)")+mk("nameD","Alphabetical (Z-A)")+mk("recent","Recently played")+mk("most","Most played")+`<hr><div data-a="newg">New group...</div><div data-a="clr">Clear filters</div>`;
+  showCtx({clientX:r.left,clientY:r.bottom+2});
+  ctx.onclick=ev=>{const a=ev.target.dataset.a||"";
+    if(a.startsWith("s:")){lib.sort=a.slice(2);$("#sortsel").value=lib.sort}
+    else if(a==="newg"){if(root)newGroup();else status("Select your htmls folder first");return}
+    else if(a==="clr"){lib.type="all";lib.ready=false;query="";$("#search").value=""}
+    else return;saveLib();render()}};
+$("#ng").onclick=()=>{if(root)newGroup();else status("Select your htmls folder first")};
+
+/* auto-group: games sharing the most tags end up together */
+function autoGroup(inc,min){
+  const inG=new Set(lib.groups.flatMap(x=>x.games)),disp={};let pool=games.filter(g=>inc||!inG.has(g.folder));
+  const T=new Map(games.map(g=>[g,[...new Set(g.tags.map(t=>{const k=t.toLowerCase();disp[k]=disp[k]||t;return k}))]])),out=[];
+  for(;;){
+    const cnt={};pool.forEach(g=>T.get(g).forEach(t=>cnt[t]=(cnt[t]||0)+1));
+    let best=null,bs=-1;
+    for(const t of Object.keys(cnt).sort()){if(cnt[t]<min)continue;
+      const m=pool.filter(g=>T.get(g).includes(t)),c2={};
+      m.forEach(g=>T.get(g).forEach(u=>{if(u!==t)c2[u]=(c2[u]||0)+1}));
+      const sc=m.length*1000+Object.values(c2).filter(v=>v>1).reduce((a,v)=>a+v,0);
+      if(sc>bs){bs=sc;best={t,m,c2}}}
+    if(!best)break;
+    /* if the games share the main tag but split by a second tag (Website+TV vs Website+games), make one group per second tag */
+    const parts=[];let rest=[...best.m];
+    for(;;){const c={};rest.forEach(g=>T.get(g).forEach(u=>{if(u!==best.t)c[u]=(c[u]||0)+1}));
+      const cand=Object.entries(c).filter(([u,n])=>n>=min&&(parts.length?true:n<rest.length)).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0];
+      if(!cand)break;const sub=rest.filter(g=>T.get(g).includes(cand[0]));parts.push({name:disp[best.t]+" & "+disp[cand[0]],games:sub});rest=rest.filter(g=>!sub.includes(g))}
+    if(parts.length&&rest.length>=min)parts.push({name:disp[best.t],games:rest});
+    if(parts.length>=2)parts.forEach(x=>out.push({name:x.name,games:x.games.map(g=>g.folder)}));
+    else{const sd=Object.entries(best.c2).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0];
+      out.push({name:disp[best.t]+(sd&&sd[1]>=Math.max(2,Math.ceil(best.m.length/2))?" & "+disp[sd[0]]:""),games:best.m.map(g=>g.folder)})}
+    pool=pool.filter(g=>!best.m.includes(g));
+  }
+  return out;
+}
+
+/* ===== themes (saved as .txt in "Launcher Themes" next to launcher.html) ===== */
+const DEF={name:"Default",type:"default",background:"#1b2838",panel:"#16202d",header:"#171a21",text:"#c6d4df",accent:"#66c0f4",button:"#75b022",ramps:{background:{angle:180,stops:[{p:0,c:"#1b2838"},{p:100,c:"#0f1923"}]}},fav:FAVDEF()};
+let gradClip=(()=>{try{return JSON.parse(localStorage.getItem("ht_gradclip"))}catch(e){return null}})();
+let themes=[DEF],active=DEF,base=null,themesDir=null,view="library";
+const safe=n=>n.replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g," ").trim().replace(/^\.+|[. ]+$/g,"")||"Theme";
+function mix(a,b,t){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),x=p(a),y=p(b);return"#"+x.map((v,i)=>Math.round(v+(y[i]-v)*t).toString(16).padStart(2,"0")).join("")}
+const sorted=r=>[...r.stops].sort((a,b)=>a.p-b.p);
+const rampCss=(r,ang)=>`linear-gradient(${ang??r.angle}deg,${sorted(r).map(s=>s.c+" "+s.p+"%").join(",")})`;
+function sample(r,x){const s=sorted(r);x*=100;if(x<=s[0].p)return s[0].c;for(let i=1;i<s.length;i++)if(x<=s[i].p){const a=s[i-1],b=s[i];return mix(a.c,b.c,b.p===a.p?0:(x-a.p)/(b.p-a.p))}return s.at(-1).c}
+const rgba=(h,a)=>`rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`;
+const rampA=(r,a)=>`linear-gradient(${r.angle}deg,${sorted(r).map(s=>rgba(s.c,a)+" "+s.p+"%").join(",")})`;
+function tvars(t){
+  const R=t.ramps||{},rep=k=>R[k]?sample(R[k],.5):t[k],bg=rep("background"),pn=rep("panel"),hd=rep("header"),bt=rep("button");
+  const btnR={angle:90,stops:[{p:0,c:bt},{p:100,c:mix(bt,"#000000",.35)}]};
+  const rr=k=>R[k]||{angle:180,stops:[{p:0,c:t[k]},{p:100,c:t[k]}]};
+  const imv=k=>{const im=t.images&&t.images[k],u=t._urls&&t._urls[k];return im&&u?{im,u}:null};
+  const nineOn=im=>im.sl+im.st+im.sr+im.sb>0;
+  /* no margins set: the picture is simply stretched over the colour/gradient (strength fades it) */
+  const el=(k,base,ramp)=>{const v=imv(k);if(!v||nineOn(v.im))return base;const a=1-v.im.strength/100;
+    return(a>.01?rampA(ramp,a)+",":"")+`url('${v.u}') 0 0/100% 100% no-repeat,`+base};
+  /* margins set: a nine-patch drawn by a border-image on each surface (generated CSS below) */
+  const np=(x,k)=>{const v=imv(k),n=v&&nineOn(v.im)?v:null,im=n&&n.im;
+    return{["--"+x+"9"]:n?`url('${n.u}') ${im.st} ${im.sr} ${im.sb} ${im.sl} fill stretch`:"none",["--"+x+"t"]:n?im.st:0,["--"+x+"r"]:n?im.sr:0,["--"+x+"b"]:n?im.sb:0,["--"+x+"l"]:n?im.sl:0,["--"+x+"s"]:n?im.scale/100:1,["--"+x+"o"]:n?im.strength/100:1,["--"+x+"n"]:v&&v.im.nearest?"pixelated":"auto"}};
+  const bgBase=R.background?rampCss(R.background):t.background,mv=imv("background"),mNine=!!(mv&&nineOn(mv.im));
+  return{"--bg":bg,"--panel":pn,"--bg2":hd,"--text":t.text,"--blue":t.accent,"--green2":bt,"--green1":mix(bt,"#000000",.35),
+  "--hi":mix(pn,"#ffffff",.14),"--dim":mix(t.text,bg,.45),"--dk":mix(hd,"#000000",.45),"--hov":mix(pn,t.accent,.22),"--srch":mix(t.accent,bg,.6),
+  "--g1":R.background?sample(R.background,.15):bg,
+  "--bgf":el("background",bgBase,rr("background")),
+  "--panelf":el("panel",R.panel?rampCss(R.panel):t.panel,rr("panel")),
+  "--hdrf":el("header",R.header?rampCss(R.header):t.header,rr("header")),
+  "--btnf":el("button",rampCss(R.button||btnR),R.button||btnR),
+  "--bgc":mNine?"transparent":"initial","--bgm":mNine?bgBase:"initial",
+  ...np("p","panel"),...np("h","header"),...np("b","button"),...np("m","background")}}
+const cssv=t=>Object.entries(tvars(t)).map(([k,v])=>k+":"+v).join(";");
+const mini=t=>`<div class="mini" style="${cssv(t)}"><div class="mh"><b>VOLT</b><span>Library</span><span>Settings</span></div><div class="mb"><div class="ms"><i></i><i class="on"></i><i></i><i></i></div><div class="mc"><div class="mhero"><em>My Game</em></div><u>&#9654; PLAY</u></div></div></div>`;
+function applyTheme(t){active=t;applyFav(t.fav||FAVDEF());const v=tvars(t);for(const k in v)document.documentElement.style.setProperty(k,v[k]);try{localStorage.setItem("ht_theme",JSON.stringify(t,(k,v)=>k==="_urls"||(k==="file"&&typeof v==="string"&&v.startsWith("data:"))?undefined:v))}catch(e){}}
+const useTheme=t=>{applyTheme(t);lib.theme=t.name;saveLib()};
+function themeFromLib(){const t=lib.theme&&themes.find(x=>x.name===lib.theme);if(t)applyTheme(t)}
+const pRamp=v=>{const[a,st=""]=v.split("|"),stops=st.split(",").map(x=>x.trim().match(/^([\d.]+)%?\s+(#[0-9a-f]{6})$/i)).filter(Boolean).map(m=>({p:Math.min(100,Math.max(0,+m[1])),c:m[2]}));return stops.length>=2?{angle:isNaN(parseFloat(a))?180:parseFloat(a),stops}:null};
+const rampText=r=>`${r.angle} | ${r.stops.map(s=>s.p+" "+s.c).join(", ")}`;
+function parseTheme(txt,file){
+  const o={};for(const l of txt.replace(/\r/g,"").split("\n")){const m=l.match(/^\s*([a-z0-9-]+)\s*[:=]\s*(.*)$/i);if(m)o[m[1].toLowerCase()]=m[2].trim()}
+  const hx=/^#[0-9a-f]{6}$/i,c=(k,d)=>hx.test(o[k]||"")?o[k]:d;
+  const t={name:o.name||file.replace(/\.txt$/i,""),type:"custom",file,background:c("background",DEF.background),panel:c("panel",DEF.panel),header:c("header",DEF.header),text:c("text",DEF.text),accent:c("accent",DEF.accent),button:c("button",DEF.button),ramps:{}};
+  for(const k of["background","panel","header","button"]){const r=o["gradient-"+k]&&pRamp(o["gradient-"+k]);if(r)t.ramps[k]=r}
+  if(!t.ramps.background&&o.gradient){const g=o.gradient.split(/[,\s]+/).filter(x=>hx.test(x));  /* older theme files */
+    if(g.length>=2)t.ramps.background={angle:o.angle!==undefined&&!isNaN(+o.angle)?+o.angle:180,stops:[{p:0,c:g[0]},{p:100,c:g[1]}]}}
+  /* image-<element>: <data:image/...;base64,...> | nine left,top,right,bottom,cornerScale | strength | nearest or smooth */
+  t.images={};for(const k of["background","panel","header","button"]){const v=o["image-"+k];if(!v)continue;const[src,m1="",st="100",fl=""]=v.split("|").map(x=>x.trim());if(!src)continue;
+    const cl=(x,a,b)=>Math.min(b,Math.max(a,x)),nm=/^nine/i.test(m1)?(m1.match(/-?[\d.]+/g)||[]).map(Number):[];
+    const im={file:src,sl:0,st:0,sr:0,sb:0,scale:100,strength:st===""||isNaN(+st)?100:cl(+st,0,100),nearest:/near/i.test(fl)};
+    if(nm.length>=4){[im.sl,im.st,im.sr,im.sb]=nm.slice(0,4).map(x=>Math.max(0,x));im.scale=nm[4]?cl(nm[4],10,300):100}
+    t.images[k]=im}
+  const fv=FAVDEF();   /* favicon-*: this theme's own browser-tab icon */
+  if(/^image/i.test(o.favicon||"")&&(o["favicon-image"]||"").startsWith("data:")){fv.mode="image";fv.img=o["favicon-image"]}
+  const fr=o["favicon-gradient"]&&pRamp(o["favicon-gradient"]);if(fr)fv.ramp=fr;
+  if(hx.test(o["favicon-bolt"]||""))fv.bolt=o["favicon-bolt"];if(o["favicon-rim"])fv.rim=!/off|false|no|0/i.test(o["favicon-rim"]);
+  t.fav=fv;
+  if(Object.keys(t.ramps).length)t.type="gradient";
+  return t}
+function themeText(t){const f=t.fav||FAVDEF(),im=f.mode==="image"&&f.img;
+  return `name: ${t.name}\ntype: ${t.type}\nbackground: ${t.background}\npanel: ${t.panel}\nheader: ${t.header}\ntext: ${t.text}\naccent: ${t.accent}\nbutton: ${t.button}\n`
+   +(t.type==="gradient"?Object.entries(t.ramps||{}).map(([k,r])=>`gradient-${k}: ${rampText(r)}\n`).join(""):"")
+   +Object.entries(t.images||{}).map(([k,i])=>`image-${k}: ${i.file} | nine ${i.sl},${i.st},${i.sr},${i.sb},${i.scale} | ${i.strength} | ${i.nearest?"nearest":"smooth"}\n`).join("")
+   +`favicon: ${im?"image":"color"}\nfavicon-gradient: ${rampText(f.ramp)}\nfavicon-bolt: ${f.bolt}\nfavicon-rim: ${f.rim===false?"off":"on"}\n`+(im?`favicon-image: ${f.img}\n`:"")}
+async function getFileAt(d,path){const q=path.split("/");for(const x of q.slice(0,-1))d=await d.getDirectoryHandle(x);return(await d.getFileHandle(q.at(-1))).getFile()}
+async function resolveImages(t){t._urls={};for(const k in t.images||{})try{const s=t.images[k].file;t._urls[k]=URL.createObjectURL(s.startsWith("data:")?await(await fetch(s)).blob():await getFileAt(themesDir,s))}catch(e){}}
+async function loadThemes(){
+  themes.forEach(t=>Object.values(t._urls||{}).forEach(u=>URL.revokeObjectURL(u)));const L=[DEF];if(themesDir)for await(const [n,h] of themesDir.entries())if(h.kind==="file"&&/\.txt$/i.test(n))try{const t=parseTheme(await(await h.getFile()).text(),n);await resolveImages(t);L.push(t)}catch(e){}
+  L.sort((a,b)=>a===DEF?-1:b===DEF?1:a.name.localeCompare(b.name));themes=L;themeFromLib();if(view==="settings")renderSettings();if(view==="help")renderHelp()}
+async function setBase(b){base=b;themesDir=await b.getDirectoryHandle("Launcher Themes",{create:true});await loadThemes()}
+async function linkBase(){try{const h=await showDirectoryPicker({mode:"readwrite"});await kv("set",h,"base");await setBase(h);return true}catch(e){return false}}
+async function initBase(ask){const b=await kv("get",null,"base");if(!b)return;try{if(await b.queryPermission({mode:"readwrite"})==="granted"||(ask&&await b.requestPermission({mode:"readwrite"})==="granted"))await setBase(b)}catch(e){}}
+
+/* Blender-style colour ramp: click bar = add stop, drag stop = move, pick colour, rotate */
+function rampEditor(el,r,onChange){
+  let sel=0;
+  el.innerHTML=`<div class="rmp"><div class="rbar"></div>
+    <div class="rctl"><input type="color" class="rc"><label>Position <input type="number" class="rp fld" min="0" max="100" step="1" style="width:66px"> %</label><button class="btn rdel" type="button">Delete stop</button><button class="btn rflip" type="button">Flip</button></div>
+    <div class="rctl"><span>Rotation</span><input type="range" class="ra" min="0" max="360" style="flex:1"><span class="rav" style="width:44px;text-align:right"></span></div>
+    <div class="rhint">Click the bar to add a color stop. Drag a stop to move it.</div></div>`;
+  const q=x=>el.querySelector(x),bar=q(".rbar");
+  const draw=()=>{
+    r.stops.forEach(s=>s.p=Math.round(Math.min(100,Math.max(0,s.p))*10)/10);sel=Math.min(sel,r.stops.length-1);
+    bar.style.background=rampCss(r,90);bar.querySelectorAll(".rs").forEach(x=>x.remove());
+    r.stops.forEach((s,i)=>{const m=document.createElement("i");m.className="rs"+(i===sel?" on":"");m.style.left=s.p+"%";m.dataset.s=i;m.innerHTML=`<b style="background:${s.c}"></b>`;bar.appendChild(m)});
+    const s=r.stops[sel];q(".rc").value=s.c;q(".rp").value=s.p;q(".ra").value=r.angle;q(".rav").textContent=r.angle+"\u00b0";q(".rdel").disabled=r.stops.length<=2;
+  };
+  bar.oncontextmenu=e=>{e.preventDefault();e.stopPropagation()};
+  bar.onpointerdown=e=>{
+    e.preventDefault();const rc=bar.getBoundingClientRect(),pos=x=>Math.round(Math.min(100,Math.max(0,(x-rc.left)/rc.width*100))*10)/10;
+    const mk=e.target.closest(".rs");
+    if(!mk){const p=pos(e.clientX);r.stops.push({p,c:sample(r,p/100)});sel=r.stops.length-1;draw();onChange();return}
+    sel=+mk.dataset.s;draw();
+    const cur=bar.querySelector(`.rs[data-s="${sel}"]`);cur.setPointerCapture(e.pointerId);
+    cur.onpointermove=ev=>{const s=r.stops[sel];s.p=pos(ev.clientX);cur.style.left=s.p+"%";bar.style.background=rampCss(r,90);q(".rp").value=s.p;onChange()};
+    cur.onpointerup=()=>draw();
+  };
+  q(".rc").oninput=e=>{r.stops[sel].c=e.target.value;bar.style.background=rampCss(r,90);bar.querySelector(".rs.on b").style.background=e.target.value;onChange()};
+  q(".rp").onchange=e=>{r.stops[sel].p=+e.target.value||0;draw();onChange()};
+  q(".rdel").onclick=()=>{if(r.stops.length>2){r.stops.splice(sel,1);sel=Math.max(0,sel-1);draw();onChange()}};
+  q(".rflip").onclick=()=>{r.stops.forEach(s=>s.p=100-s.p);draw();onChange()};
+  q(".ra").oninput=e=>{r.angle=+e.target.value;q(".rav").textContent=r.angle+"\u00b0";onChange()};
+  draw();
+}
+function themeEditor(t0,edit){
+  const t=JSON.parse(JSON.stringify(t0));t.ramps=t.ramps||{};
+  if(!edit){t.name=t0.type==="default"?"My theme":t0.name+" copy";t.type=Object.keys(t.ramps).length?"gradient":"custom";delete t.file}
+  const EL=[["background","Background (main area)",180],["panel","Sidebar &amp; cards",180],["header","Top bar &amp; footer",90],["button","Play button",90]],T={ramps:t.ramps,img:{}},FV=t.fav?JSON.parse(JSON.stringify(t.fav)):FAVDEF();
+  for(const k in t.images||{})if(t._urls&&t._urls[k]){const i=t.images[k],s=i.file;T.img[k]={...i,data:s,url:t._urls[k],nw:0,nh:0,name:s.startsWith("data:")?"Embedded image ("+Math.round(s.length*.75/1024)+" KB)":s.split("/").pop()}}
+  const eb=([k,l])=>`<div class="eb" data-k="${k}"><div class="ebh"><b>${l}</b><span style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="gtog"><button class="btn gcopy" type="button">Copy gradient</button><button class="btn gpaste" type="button">Paste gradient</button><label><input type="checkbox" class="gon"> Gradient</label></span><label class="itog"><input type="checkbox" class="ion"> Image</label></span></div>
+    <div class="crow ebs"><span>Color</span><input type="color" id="c_${k}" value="${t[k]}"></div><div class="ebr"></div>
+    <div class="ebi" style="display:none"><div class="rctl"><button class="btn bimg" type="button">Choose image...</button><span class="iname"></span></div>
+    <div class="iedit"><div class="rhint" style="margin-bottom:6px">Nine-patch: drag the four guide lines to set the margins. The corners keep their size; the edges and the middle stretch. With every margin at 0 the image is simply stretched.</div>
+    <div class="nbox"><img class="nimg" alt=""><i class="ng" data-n="l"></i><i class="ng" data-n="r"></i><i class="ng" data-n="t"></i><i class="ng" data-n="b"></i></div>
+    <div class="rctl" style="margin-top:8px"><label>Left <input type="number" class="zl fld" style="width:62px"></label><label>Top <input type="number" class="zt fld" style="width:62px"></label><label>Right <input type="number" class="zr fld" style="width:62px"></label><label>Bottom <input type="number" class="zb fld" style="width:62px"></label><span>px</span></div>
+    <div class="rctl" style="margin-top:6px"><label>Corner size <input type="range" class="nsc" min="10" max="300" style="width:140px"> <span class="nsv"></span></label><label>Image strength <input type="range" class="istr" min="0" max="100" style="width:120px"> <span class="isv"></span></label></div>
+    <div class="rctl" style="margin-top:6px"><label><input type="checkbox" class="inear"> Nearest-neighbor filtering (crisp pixels)</label><button class="btn bclr" type="button">Remove image</button></div></div></div></div>`;
+  modal(`<div class="dlg" style="width:min(940px,96vw)"><h3>${edit?"Edit theme":"New theme"}</h3><div class="body"><div class="te"><div class="tl">
+    <div><label>Theme name</label><input type="text" id="tn"></div>
+    <div><label>Theme type</label><select id="tt"><option value="custom">Custom (solid colors)</option><option value="gradient">Custom gradient</option></select></div>
+    ${EL.map(eb).join("")}
+    <div class="eb"><div class="ebh"><b>Text &amp; accent</b></div><div class="crow"><span>Text</span><input type="color" id="c_text" value="${t.text}"></div><div class="crow" style="margin-top:8px"><span>Accent (tags, highlights)</span><input type="color" id="c_accent" value="${t.accent}"></div></div>
+    <div class="eb"><div class="ebh"><b>Favicon (this theme's browser-tab icon)</b></div>
+      <div class="rctl"><label><input type="radio" name="fm" value="color"> Make it from colors</label><label><input type="radio" name="fm" value="image"> Use my own image</label></div>
+      <div id="fcol" style="margin-top:8px"><div class="rhint" style="margin-bottom:4px">Circle (gradient)</div><div id="framp"></div>
+        <div class="crow" style="margin-top:8px"><span>Lightning bolt (solid color)</span><input type="color" id="fbolt"></div>
+        <div class="rctl" style="margin-top:6px"><label><input type="checkbox" id="frim"> Glowing gradient rim</label></div></div>
+      <div id="fimg" style="margin-top:8px"><button class="btn" id="fpick" type="button">Choose image...</button></div></div>
+    <div id="err" style="color:#e66;font-size:13px"></div></div>
+    <div class="tr"><label>Live preview</label><div id="tpv"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;color:var(--dim)"><canvas id="tfav" width="64" height="64" style="width:48px;height:48px;background:#12151b;border-radius:4px"></canvas><canvas id="tfav2" width="16" height="16" style="width:16px;height:16px;background:#12151b"></canvas><span>Favicon</span></div></div></div></div>
+    <div class="foot"><button class="btn" id="cx">Cancel</button><button class="btn" id="s1">Save</button><button class="play" id="s2">Save &amp; apply</button></div></div>`);
+  $("#tn").value=t.name;$("#tt").value=t.type;
+  const tools=()=>{for(const[k]of EL){const b=document.querySelector(`.eb[data-k="${k}"]`);b.querySelector(".gcopy").disabled=!T.ramps[k];b.querySelector(".gpaste").disabled=!gradClip}};
+  const imgRow=(k,b)=>{const q=x=>b.querySelector(x),ion=q(".ion"),cl=(v,a,z)=>Math.min(z,Math.max(a,v));
+    ion.checked=!!T.img[k];
+    const refresh=()=>{const im=T.img[k],on=ion.checked;q(".ebi").style.display=on?"block":"none";q(".iname").textContent=im?im.name:"No image chosen";q(".iedit").style.display=on&&im?"block":"none";
+      if(!(on&&im))return;
+      const ni=q(".nimg");if(ni.getAttribute("src")!==im.url)ni.src=im.url;ni.style.imageRendering=im.nearest?"pixelated":"auto";
+      const W=im.nw||1,H=im.nh||1;q('[data-n="l"]').style.left=im.sl/W*100+"%";q('[data-n="r"]').style.left=(W-im.sr)/W*100+"%";q('[data-n="t"]').style.top=im.st/H*100+"%";q('[data-n="b"]').style.top=(H-im.sb)/H*100+"%";
+      ["l","t","r","b"].forEach(n=>q(".z"+n).value=im["s"+n]);q(".nsc").value=im.scale;q(".nsv").textContent=im.scale+"%";q(".istr").value=im.strength;q(".isv").textContent=im.strength+"%";q(".inear").checked=!!im.nearest};
+    const dims=()=>{const im=T.img[k];if(!im||im.nw)return;const i=new Image();i.onload=()=>{im.nw=i.naturalWidth;im.nh=i.naturalHeight;refresh();if($("#tpv"))upd()};i.src=im.url};
+    ion.onchange=()=>{refresh();upd()};
+    q(".bimg").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="image/png,image/jpeg,image/gif,image/webp";
+      i.onchange=()=>{const f=i.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const o=T.img[k];
+        T.img[k]={data:rd.result,url:URL.createObjectURL(f),name:f.name+" ("+(f.size>1048576?(f.size/1048576).toFixed(1)+" MB":Math.round(f.size/1024)+" KB")+")",sl:0,st:0,sr:0,sb:0,scale:o?o.scale:100,nw:0,nh:0,strength:o?o.strength:100,nearest:o?o.nearest:true};
+        ion.checked=true;refresh();dims();upd()};rd.readAsDataURL(f)};i.click()};
+    q(".bclr").onclick=()=>{delete T.img[k];ion.checked=false;refresh();upd()};
+    q(".istr").oninput=e=>{T.img[k].strength=+e.target.value;q(".isv").textContent=e.target.value+"%";upd()};
+    q(".inear").onchange=e=>{T.img[k].nearest=e.target.checked;refresh();upd()};
+    q(".nsc").oninput=e=>{T.img[k].scale=+e.target.value;q(".nsv").textContent=e.target.value+"%";upd()};
+    const nb=q(".nbox");  /* drag the four guide lines */
+    nb.onpointerdown=e=>{const g=e.target.closest(".ng"),im=T.img[k];if(!g||!im||!im.nw)return;e.preventDefault();nb.setPointerCapture(e.pointerId);const rc=nb.getBoundingClientRect(),d=g.dataset.n;
+      nb.onpointermove=ev=>{const x=(ev.clientX-rc.left)/rc.width*im.nw,y=(ev.clientY-rc.top)/rc.height*im.nh;
+        if(d==="l")im.sl=cl(Math.round(x),0,im.nw-im.sr-1);if(d==="r")im.sr=cl(Math.round(im.nw-x),0,im.nw-im.sl-1);
+        if(d==="t")im.st=cl(Math.round(y),0,im.nh-im.sb-1);if(d==="b")im.sb=cl(Math.round(im.nh-y),0,im.nh-im.st-1);refresh();upd()};
+      nb.onpointerup=()=>{nb.onpointermove=null}};
+    ["l","t","r","b"].forEach(n=>q(".z"+n).onchange=e=>{const im=T.img[k],v=Math.max(0,Math.round(+e.target.value||0));
+      const lim=n==="l"?im.nw-im.sr-1:n==="r"?im.nw-im.sl-1:n==="t"?im.nh-im.sb-1:im.nh-im.st-1;im["s"+n]=cl(v,0,Math.max(0,lim));refresh();upd()});
+    refresh();dims()};
+  for(const[k]of EL){const b=document.querySelector(`.eb[data-k="${k}"]`);
+    b.querySelector(".gcopy").onclick=()=>{gradClip=JSON.parse(JSON.stringify(T.ramps[k]));try{localStorage.setItem("ht_gradclip",JSON.stringify(gradClip))}catch(e){}tools()};
+    b.querySelector(".gpaste").onclick=()=>{if(!gradClip)return;T.ramps[k]=JSON.parse(JSON.stringify(gradClip));b.querySelector(".gon").checked=true;rampEditor(b.querySelector(".ebr"),T.ramps[k],upd);upd()};
+    imgRow(k,b)}
+  /* favicon editor (saved with the theme) */
+  document.querySelector(`input[name=fm][value=${FV.mode==="image"&&FV.img?"image":"color"}]`).checked=true;
+  rampEditor($("#framp"),FV.ramp,()=>upd());
+  $("#fbolt").value=FV.bolt;$("#frim").checked=FV.rim!==false;
+  $("#fbolt").oninput=e=>{FV.bolt=e.target.value;upd()};
+  $("#frim").onchange=e=>{FV.rim=e.target.checked;upd()};
+  document.querySelectorAll("input[name=fm]").forEach(x=>x.onchange=()=>{FV.mode=document.querySelector("input[name=fm]:checked").value;upd()});
+  $("#fpick").onclick=()=>{const i=document.createElement("input");i.type="file";i.accept="image/png,image/jpeg,image/gif,image/webp";
+    i.onchange=()=>{const f=i.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=c.height=128;const m=Math.min(im.width,im.height);
+      c.getContext("2d").drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,128,128);FV.img=c.toDataURL("image/png");FV.mode="image";document.querySelector("input[name=fm][value=image]").checked=true;upd()};im.src=rd.result};rd.readAsDataURL(f)};i.click()};
+  const read=()=>{const g=$("#tt").value==="gradient",o={name:$("#tn").value.trim(),type:$("#tt").value,text:$("#c_text").value,accent:$("#c_accent").value,ramps:{},images:{},_urls:{},fav:JSON.parse(JSON.stringify(FV))};
+    for(const[k]of EL){o[k]=$("#c_"+k).value;if(g&&T.ramps[k]){o.ramps[k]=JSON.parse(JSON.stringify(T.ramps[k]));o[k]=sample(T.ramps[k],.5)}}
+    for(const k in T.img){if(!document.querySelector(`.eb[data-k="${k}"] .ion`).checked)continue;const i=T.img[k];
+      o.images[k]={sl:i.sl,st:i.st,sr:i.sr,sb:i.sb,scale:i.scale,strength:i.strength,nearest:!!i.nearest};o._urls[k]=i.url}return o};
+  const upd=()=>{const o=read(),g=o.type==="gradient";
+    document.querySelectorAll(".gtog").forEach(x=>x.style.display=g?"flex":"none");
+    for(const[k]of EL){const b=document.querySelector(`.eb[data-k="${k}"]`),on=g&&!!T.ramps[k];b.querySelector(".ebs").style.display=on?"none":"flex";b.querySelector(".ebr").style.display=on?"block":"none"}
+    $("#fcol").style.display=FV.mode==="image"?"none":"block";$("#fimg").style.display=FV.mode==="image"?"block":"none";
+    $("#tpv").innerHTML=mini(o);tools();
+    favCanvas(FV,64).then(cv=>{const a=$("#tfav");if(!a)return;const x=a.getContext("2d"),y=$("#tfav2").getContext("2d");x.clearRect(0,0,64,64);x.drawImage(cv,0,0);y.clearRect(0,0,16,16);y.drawImage(cv,0,0,16,16)})};
+  for(const[k,,ang]of EL){const b=document.querySelector(`.eb[data-k="${k}"]`),box=b.querySelector(".gon");
+    if(T.ramps[k]){box.checked=true;rampEditor(b.querySelector(".ebr"),T.ramps[k],upd)}
+    box.onchange=()=>{
+      if(box.checked){const c=$("#c_"+k).value;T.ramps[k]=T.ramps[k]||{angle:ang,stops:[{p:0,c},{p:100,c:mix(c,"#000000",.4)}]};rampEditor(b.querySelector(".ebr"),T.ramps[k],upd)}
+      else{if(T.ramps[k])$("#c_"+k).value=sample(T.ramps[k],.5);delete T.ramps[k]}
+      upd()}}
+  $("#modal").querySelectorAll(".ebs input[type=color],#c_text,#c_accent,#tn").forEach(e=>e.oninput=upd);$("#tt").onchange=upd;upd();
+  $("#cx").onclick=closeModal;
+  const save=async ap=>{const o=read(),m=x=>$("#err").textContent=x;
+    if(!o.name)return m("Give the theme a name.");
+    if(themes.some(x=>x.name.toLowerCase()===o.name.toLowerCase()&&!(edit&&x===t0)))return m("A theme with that name already exists.");
+    if(!themesDir&&!await linkBase())return m("Link the folder that contains launcher.html so themes can be saved in 'Launcher Themes'.");
+    try{const file=safe(o.name)+".txt";
+      for(const k in o.images){const im=T.img[k];let d=im.data;   /* every picture is embedded in the .txt as base64 */
+        if(!d.startsWith("data:")){const f=await getFileAt(themesDir,d);d=await new Promise(res=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.readAsDataURL(f)})}
+        o.images[k]={file:d,sl:im.sl,st:im.st,sr:im.sr,sb:im.sb,scale:im.scale,strength:im.strength,nearest:!!im.nearest}}
+      await put(themesDir,file,themeText(o));
+      const lg=edit&&t0.images&&Object.values(t0.images).find(i=>!i.file.startsWith("data:"));   /* old "<name> files" folder is no longer needed */
+      if(lg)try{await themesDir.removeEntry(lg.file.split("/")[0],{recursive:true})}catch(e){}
+      if(edit&&t0.file&&t0.file!==file)try{await themesDir.removeEntry(t0.file)}catch(e){}
+      const wasActive=edit&&active.name===t0.name;await loadThemes();const nt=themes.find(x=>x.file===file);
+      if(ap||wasActive)useTheme(nt);closeModal();renderSettings()}catch(e){m(e.message)}};
+  $("#s1").onclick=()=>save(false);$("#s2").onclick=()=>save(true);
+}
+
+/* ===== settings page ===== */
+function setView(v){view=v;$("#tlib").classList.toggle("on",v==="library");$("#tset").classList.toggle("on",v==="settings");$("#thelp").classList.toggle("on",v==="help");
+  $("#tstore").classList.toggle("on",v==="store");$("#store").style.display=v==="store"?"block":"none";$("#main").style.display=v==="library"?"flex":"none";$("#settings").style.display=v==="settings"?"block":"none";$("#help").style.display=v==="help"?"block":"none";if(v==="settings")renderSettings();if(v==="help")renderHelp();if(v==="store")openStore();navTrack()}
+$("#tstore").onclick=()=>setView("store");$("#tlib").onclick=()=>setView("library");$("#tset").onclick=()=>setView("settings");$("#thelp").onclick=()=>setView("help");
+/* ===== Advanced settings: live download queue, keys, speed, console ===== */
+let advTimer=0,advSeq=-1,advFlt="all";
+const advAgo=t=>{if(!t)return"never";const s=Math.round((Date.now()-t)/1000);return s<60?s+"s ago":s<3600?Math.round(s/60)+" min ago":Math.round(s/3600)+" h ago"};
+function advBind(){
+  const on=$("#advon"),B=$("#advbody");if(!on||!B)return;
+  clearInterval(advTimer);advSeq=-1;on.checked=!!lib.advanced;
+  on.onchange=()=>{lib.advanced=on.checked;saveLib();advBind()};
+  if(!lib.advanced){B.innerHTML="";return}
+  B.innerHTML=`<div class="stats"><div><span>Speed now</span><b id="adsp">-</b></div><div><span>Average</span><b id="adav">-</b></div><div><span>Peak</span><b id="adpk">-</b></div><div><span>Downloaded this session</span><b id="adtot">-</b></div></div>
+  <svg id="adgr" viewBox="0 0 300 46" preserveAspectRatio="none" style="width:100%;height:46px;background:#0b0f14;border-radius:3px;display:block"></svg><div class="adnote">Speed over the last 60 seconds.</div>
+  <h4>Download limit</h4><div id="adlim"></div>
+  <h4>Quota savers</h4>
+  <div class="adnote" style="font-size:13px;color:var(--text)">Store icons and descriptions are read with tiny partial downloads and remembered, so each game is looked at once. Failed ones wait 6 hours before another try, and when Drive says no, Volt stops asking for a while instead of retrying. Game installs always go first and are never held back by this budget.</div>
+  <table><tr><td>Store info downloaded today</td><td id="adbg">-</td><td>Daily budget <input id="adbud" type="number" min="5" max="1000" class="fld" style="width:80px"> MB</td></tr>
+  <tr><td>Games with info saved</td><td id="adci">-</td><td></td></tr>
+  <tr><td>Games waiting to retry</td><td id="adfl">-</td><td></td></tr>
+  <tr><td>Downloads reused instead of repeated</td><td id="adre">-</td><td></td></tr></table>
+  <h4>Download queue</h4><div id="adq"></div>
+  <h4>Drive keys</h4><div id="adk"></div>
+  <div class="adnote">Google doesn't report how much quota is left, so these numbers are what this launcher has downloaded with each key. "Today" resets at midnight (UTC). Keys from the same Google project share one quota.</div>
+  <h4>Console <select id="adflt" class="fld" style="width:auto;font-size:12px;padding:2px 6px;margin-left:8px"><option value="all">Everything</option><option value="dl">Downloads only</option><option value="br">Browser console only</option></select></h4>
+  <div class="adnote">Shows the launcher's own messages plus anything the page writes to the F12 console (log, warn, error, uncaught errors). Red network lines like "blocked by CORS policy" or "net::ERR_FAILED" are written by the browser itself, so pages can't read them - those only show in F12.</div>
+  <div class="advcon" id="adcon"></div>
+  <p><button class="btn" id="adclr" type="button">Clear</button> <button class="btn" id="adcpy" type="button">Copy log</button></p>`;
+  $("#adbud").value=lib.bgBudget||50;$("#adbud").onchange=e=>{lib.bgBudget=Math.max(5,Math.min(1000,+e.target.value||50));e.target.value=lib.bgBudget;saveLib()};
+  $("#adflt").value=advFlt;$("#adflt").onchange=e=>{advFlt=e.target.value;advSeq=-1;advDraw()};
+  $("#adclr").onclick=()=>{dlLogs.length=0;advSeq=-1;advDraw()};
+  $("#adcpy").onclick=async()=>{const t=dlLogs.map(x=>new Date(x.t).toLocaleTimeString()+" "+(x.s?"["+x.s+"] ":"")+x.m).join("\n");try{await navigator.clipboard.writeText(t);$("#adcpy").textContent="Copied"}catch(e){$("#adcpy").textContent="Couldn't copy"}setTimeout(()=>{const b=$("#adcpy");if(b)b.textContent="Copy log"},1500)};
+  advDraw();advTimer=setInterval(()=>{if(view!=="settings"||!$("#adq")||!lib.advanced){clearInterval(advTimer);return}advDraw()},500)}
+function advDraw(){
+  const sp=dlSpeed(3000),sec=Math.max(1,(Date.now()-dlS.t0)/1000),set=(id,v)=>{const e=$("#"+id);if(e)e.textContent=v};
+  set("adsp",sz(sp)+"/s");set("adav",sz(dlS.bytes/sec)+"/s");set("adpk",sz(dlS.peak)+"/s");set("adtot",sz(dlS.bytes));
+  const g=$("#adgr");if(g){const now=Date.now(),b=new Array(60).fill(0);for(const x of dlS.samples){const i=59-Math.floor((now-x[0])/1000);if(i>=0&&i<60)b[i]+=x[1]}
+    const mx=Math.max(1,...b);g.innerHTML=`<polyline fill="none" stroke="#66c0f4" stroke-width="1.5" vector-effect="non-scaling-stroke" points="${b.map((v,i)=>(i*300/59).toFixed(1)+","+(44-v/mx*40).toFixed(1)).join(" ")}"/>`}
+  {const bg=$("#adbg");if(bg){const over=dlBg.bytes>=bgLimit();bg.textContent=sz(dlBg.bytes)+" of "+Math.round(bgLimit()/1048576)+" MB";bg.className=over?"bad":"";
+    set("adci",(typeof store!=="undefined"?store.items.filter(i=>i.m).length+" of "+store.items.length:"-"));
+    set("adfl",String(typeof store!=="undefined"?store.items.filter(i=>!i.m&&store.fails&&store.fails[i.key]).length:0));
+    set("adre",(dlS.hits||0)+(dlS.saved?" ("+sz(dlS.saved)+" saved)":""))}}
+  const lm=$("#adlim");if(lm){const ks=VKEYS(),lim=ks.map((x,i)=>({i,o:dlKey(x)})).filter(z=>z.o.limSince);
+    if(!lim.length)lm.innerHTML='<div class="adnote ok">No download limit has been hit.</div>';
+    else{const grp=new Map();lim.forEach(z=>{const k=z.o.limKind+"|"+z.o.limReason;(grp.get(k)||grp.set(k,[]).get(k)).push(z)});
+      lm.innerHTML=[...grp.values()].map(g=>{const o=g[0].o,since=Math.min(...g.map(z=>z.o.limSince)),L=[],names=g.map(z=>z.i+1).join(", ");
+        const mn=`<b>Per-minute limit:</b> clears within about a minute. Volt retries by itself${Date.now()<driveCool?" (next try in "+Math.ceil((driveCool-Date.now())/1000)+"s)":""}.`,
+          fl=`<b>File download limit:</b> usually clears about 24 hours after it started - around <b>${fmtClock(since+864e5)}</b> (in ${fmtDur(since+864e5-Date.now())}).`,
+          dy=`<b>Daily project quota:</b> resets at midnight Pacific Time - <b>${fmtClock(pacificMidnight())}</b> your time (in ${fmtDur(pacificMidnight()-Date.now())}).`;
+        if(o.limKind==="minute")L.push(mn);else if(o.limKind==="file")L.push(fl);else if(o.limKind==="daily")L.push(dy);else L.push(mn,fl,dy);
+        return`<div class="cool" style="color:var(--text)"><b>Key${g.length>1?"s":""} ${names}</b> ${g.length>1?"have":"has"} been refused since ${fmtClock(since)} (${fmtDur(Date.now()-since)} ago). ${o.limKind==="unknown"?"Google hides the reason from the browser, so it could be any of these:":"Reason: "+esc(o.limReason)+" (estimate)"}<ul style="margin:6px 0 0 18px;padding:0">${L.map(x=>"<li>"+x+"</li>").join("")}</ul></div>`}).join("")+'<div class="adnote">Google doesn\'t publish exact reset times - these are estimates. The limit clears automatically the first time a download works again.</div>'}}
+  const q=$("#adq");if(q){const c=netQ.cur,L=netQ.list,cool=Date.now()<driveCool;
+    let h=cool?`<div class="cool">Drive refused every key - background downloads are paused for ${Math.ceil((driveCool-Date.now())/1000)}s. Game installs still go through.</div>`:"";
+    if(!c&&!L.length)h+='<div class="adnote">Nothing is downloading.</div>';
+    else{h+="<table><tr><th>#</th><th>What</th><th>Type</th><th>Status</th></tr>";
+      if(c){const s=Math.max(.2,(Date.now()-c.t0)/1000);h+=`<tr><td>now</td><td>${esc(c.label)}</td><td>${PN[c.pri]}</td><td class="ok">key ${dlS.lastKey+1} &middot; ${sz(c.got||0)}${c.total?" of "+sz(c.total):""} &middot; ${sz((c.got||0)/s)}/s</td></tr>`}
+      L.forEach((t,i)=>{h+=`<tr><td>${i+1}</td><td>${esc(t.label)}</td><td>${PN[t.pri]}</td><td class="warn">waiting</td></tr>`});h+="</table>"}
+    q.innerHTML=h}
+  const k=$("#adk");if(k){const ks=VKEYS();
+    k.innerHTML=ks.length?"<table><tr><th>Key</th><th></th><th>Requests</th><th>This session</th><th>Today</th><th>All time</th><th>Last answer</th></tr>"+ks.map((x,i)=>{const o=dlKey(x),use=i===keyIx;
+      return`<tr><td>${i+1}${i===0?" (main)":" (backup)"}<br><small style="color:var(--dim)">${esc(keyId(x))}</small></td><td>${use?'<b class="ok">in use</b>':"idle"}</td><td>${o.ok} ok / <span class="${o.fail?"bad":""}">${o.fail} failed</span></td><td>${sz(o.bytes)}</td><td>${sz(o.dayBytes)}</td><td>${sz(o.life)}</td><td class="${/^OK/.test(o.last)?"ok":o.last?"bad":""}">${esc(o.last||"-")}<br><small style="color:var(--dim)">${advAgo(o.lastAt)}</small></td></tr>`}).join("")+"</table>":'<div class="adnote">No Drive key is set.</div>'}
+  const con=$("#adcon");if(con&&advSeq!==dlSeq){advSeq=dlSeq;const bot=con.scrollTop+con.clientHeight>=con.scrollHeight-24;
+    con.innerHTML=dlLogs.filter(x=>advFlt==="all"||(advFlt==="dl"?!x.s:!!x.s)).slice(-300).map(x=>`<div class="${x.l}"><i>${new Date(x.t).toLocaleTimeString()}</i>  ${x.s?`<i>[${esc(x.s)}]</i> `:""}${esc(x.m)}</div>`).join("")||'<div><i>Nothing yet. Open the Store or press Install and the activity shows up here.</i></div>';
+    if(bot)con.scrollTop=con.scrollHeight}}
+function renderSettings(){
+  const opt=(a,s)=>a.map(([v,l])=>`<option value="${v}" ${v===s?"selected":""}>${l}</option>`).join("");
+  $("#settings").innerHTML=`<div class="st"><h2 class="title" style="padding:24px 0 0">Launcher settings</h2>
+  <section><h3>Folders</h3>
+    <p>Your games live in the <b>htmls</b> folder. Themes are saved in <b>Launcher Themes</b>, next to launcher.html.</p>
+    <div class="frow"><span><b>Games folder:</b> ${root?esc(root.name):"not selected"}</span><span><button class="btn" id="fgames">${root?"Change":"Select"} htmls folder</button> <button class="btn" id="frescan" ${root?"":"disabled"}>Rescan games</button></span></div>
+    <div class="frow"><span><b>Launcher folder:</b> ${themesDir&&base?esc(base.name)+" / Launcher Themes":"not linked"}</span><span><button class="btn" id="fbase">${themesDir?"Change":"Select"} launcher folder</button></span></div>
+    <label style="margin-top:12px"><input type="checkbox" id="olock" ${lib.offlineLock!==false?"checked":""}> Gray out and block Website games while there's no internet connection</label>
+  </section>
+  <section><h3>Sorting &amp; groups</h3>
+    <label>Sort the library by <select class="fld" id="sset">${opt([["name","Name (A-Z)"],["nameD","Name (Z-A)"],["recent","Recently played"],["most","Most played"]],lib.sort)}</select></label>
+    <h4>Sort all current profiles by similar tags</h4>
+    <p>Splits the library into groups of games that share the most tags. Right-click a group header to rename or delete it, and right-click a game to favorite it or move it between groups.</p>
+    <label><input type="radio" name="inc" value="0" checked> Don't touch games that are already in a group</label>
+    <label><input type="radio" name="inc" value="1"> Include games that are already in groups (they move into the new groups)</label>
+    <label>Smallest group size <input type="number" id="amin" class="fld" min="2" value="2" style="width:70px"></label>
+    <p><button class="btn" id="aprev">Preview groups</button> <button class="btn" id="aundo" ${lib.undo?"":"disabled"}>Undo last auto-sort</button></p><div id="aout"></div>
+  </section>
+  <section><h3>Launcher theme</h3><div style="display:flex;gap:20px;flex-wrap:wrap"><div style="flex:1;min-width:240px">
+    <select class="fld" id="thsel" style="width:100%">${themes.map((t,i)=>`<option value="${i}" ${t.name===active.name?"selected":""}>${esc(t.name)}${t.type==="default"?" (built-in)":" ("+t.type+")"}${t.name===active.name?" - active":""}</option>`).join("")}</select>
+    <p><button class="btn" id="tuse">Apply</button> <button class="btn" id="tnew">New theme</button> <button class="btn" id="ted">Edit</button> <button class="btn" id="tdel">Delete</button></p></div>
+    <div style="flex:1;min-width:260px" id="thprev"></div></div>
+    <p style="font-size:13px">Saved themes are .txt files in a <b>Launcher Themes</b> folder next to launcher.html. ${themesDir?"Folder linked.":"No folder linked yet."} <button class="btn" id="tlink">${themesDir?"Change":"Link"} launcher folder</button></p>
+  </section>
+  <section><h3>Launcher version</h3>
+    <p>You're running <b>Volt v${VOLT_VER}</b> (<b>${esc(launcherName())}</b>).</p>
+    <div class="drop" id="vdrop">Drop a newer launcher .html here<br><button class="btn" id="vpick" type="button">Choose launcher file...</button><div id="vmsg" style="margin-top:8px"></div></div>
+    <p style="font-size:12px">Volt's version is the number inside the launcher (a number in brackets in the file name counts too, whichever is higher). When you give it a newer file, Volt copies the old launcher into a <b>Launcher Backups</b> folder, writes the new one over the launcher file under the same name, and reloads. Your games, groups and themes are not touched. This needs the launcher folder to be linked.</p>
+  </section>
+  <section id="updsec"><h3>Updates</h3>
+    <p>Volt checks for a newer launcher and for new or changed game profiles when it opens and then every 30 minutes. Anything it finds shows up under the blue bell at the top.</p>
+    <p><button class="btn" id="utest" type="button">Check for updates now</button></p><div id="ustat" style="font-size:13px"></div>
+  </section>
+  <section class="adv" id="advsec"><h3>Advanced settings</h3>
+    <p><label style="cursor:pointer"><input type="checkbox" id="advon"> Show download tools (queue, keys, speed and live console)</label></p>
+    <div id="advbody"></div>
+  </section></div>`;
+  updSettings();advBind();
+  $("#vpick").onclick=async()=>{try{const [h]=await showOpenFilePicker({types:[{description:"Volt launcher",accept:{"text/html":[".html",".htm"]}}]});await updateLauncher(h)}catch(e){}};
+  {const vd=$("#vdrop");vd.ondragover=e=>{e.preventDefault();vd.classList.add("over")};vd.ondragleave=()=>vd.classList.remove("over");
+   vd.ondrop=e=>{e.preventDefault();vd.classList.remove("over");const it=[...e.dataTransfer.items].find(x=>x.kind==="file");
+     if(!it||!it.getAsFileSystemHandle)return vmsg("Drag and drop isn't supported here, use the button.",1);it.getAsFileSystemHandle().then(updateLauncher)}}
+  $("#fgames").onclick=async()=>{await pick();renderSettings()};
+  $("#fbase").onclick=async()=>{if(await linkBase())renderSettings()};
+  $("#frescan").onclick=()=>load(root,selected&&selected.folder);
+  $("#olock").onchange=e=>{lib.offlineLock=e.target.checked;saveLib();checkNet();render()};
+  $("#sset").onchange=e=>{lib.sort=e.target.value;$("#sortsel").value=lib.sort;saveLib();render()};
+  let prop=[],pinc=false;
+  $("#aprev").onclick=()=>{pinc=document.querySelector('input[name=inc]:checked').value==="1";const min=Math.max(2,+$("#amin").value||2);prop=autoGroup(pinc,min);
+    $("#aout").innerHTML=prop.length?prop.map(p=>`<div class="pg"><b>${esc(p.name)}</b> (${p.games.length})<div>${esc(p.games.map(f=>games.find(g=>g.folder===f).name).join(", "))}</div></div>`).join("")+`<button class="play" id="aok" style="font-size:14px;padding:9px 28px;margin-top:8px">Create ${prop.length} group${prop.length>1?"s":""}</button>`:`<p>No groups found. At least ${min} games need to share a tag.</p>`;
+    const ok=$("#aok");if(ok)ok.onclick=()=>{lib.undo=JSON.stringify(lib.groups);
+      for(const p of prop){let gr=lib.groups.find(x=>x.name.toLowerCase()===p.name.toLowerCase());if(!gr){gr={name:p.name,games:[],collapsed:true,auto:true};lib.groups.push(gr)}
+        if(pinc)lib.groups.forEach(x=>{if(x!==gr)x.games=x.games.filter(f=>!p.games.includes(f))});
+        p.games.forEach(f=>{if(!gr.games.includes(f))gr.games.push(f)})}
+      saveLib();render();renderSettings();$("#aout").innerHTML="<p>Groups created. Check the library sidebar.</p>"}};
+  $("#aundo").onclick=()=>{if(!lib.undo)return;lib.groups=JSON.parse(lib.undo);lib.undo="";saveLib();render();renderSettings()};
+  const cur=()=>themes[$("#thsel").value]||DEF,pv=()=>{$("#thprev").innerHTML=mini(cur());$("#tdel").disabled=cur().type==="default"};
+  $("#thsel").onchange=pv;pv();
+  $("#tuse").onclick=()=>{useTheme(cur());renderSettings()};
+  $("#tnew").onclick=()=>themeEditor(cur(),false);
+  $("#ted").onclick=()=>themeEditor(cur(),cur().type!=="default");
+  $("#tdel").onclick=async()=>{const t=cur();if(t.type==="default"||!confirm(`Delete the theme "${t.name}"?`))return;
+    try{await themesDir.removeEntry(t.file)}catch(e){}if(active.name===t.name)useTheme(DEF);await loadThemes();renderSettings()};
+  $("#tlink").onclick=async()=>{if(await linkBase())renderSettings()};
+}
+/* nine-patch surfaces: a pseudo-element with a border-image draws the picture behind each surface's content */
+document.head.appendChild(Object.assign(document.createElement("style"),{textContent:"*{image-rendering:auto}"+[
+  ["aside,.card,.st section,.mini .ms","aside,.card,.st section,.mini .ms","p"],["header,footer,.mini .mh","header,footer,.mini .mh","h"],
+  [".play,.mini u",".play,.mini u","b"],["#content,#settings,#help,#store,.mini .mc","#app,.mini","m"]].map(([pl,ph,x])=>
+  `${pl}{image-rendering:var(--${x}n,auto)}${ph}{position:relative;isolation:isolate}`+ph.split(",").map(z=>z+"::before").join(",")+`{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;box-sizing:border-box;border:0 solid transparent;image-rendering:var(--${x}n,auto);opacity:var(--${x}o,1);border-image:var(--${x}9,none);border-width:calc(var(--${x}t,0)*var(--${x}s,1)*var(--zoom,1)*1px) calc(var(--${x}r,0)*var(--${x}s,1)*var(--zoom,1)*1px) calc(var(--${x}b,0)*var(--${x}s,1)*var(--zoom,1)*1px) calc(var(--${x}l,0)*var(--${x}s,1)*var(--zoom,1)*1px)}`).join("")}));
+
+/* ===== favicon: gradient circle + solid bolt (or your own image) ===== */
+function FAVDEF(){return{mode:"color",ramp:{angle:90,stops:[{p:0,c:"#1538b8"},{p:100,c:"#9a0fb8"}]},bolt:"#ececec",rim:true,img:""}}
+function toHsl(h){const r=parseInt(h.slice(1,3),16)/255,g=parseInt(h.slice(3,5),16)/255,b=parseInt(h.slice(5,7),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;let hh=0,s=0;
+  if(d){s=d/(1-Math.abs(2*l-1));hh=(mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4)*60}return[hh,s,l]}
+function fromHsl(h,s,l){const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));return"#"+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,"0")).join("")}
+const hueShift=(c,dh,l)=>fromHsl((toHsl(c)[0]+dh+360)%360,1,l);
+async function favCanvas(F,S){
+  const cv=document.createElement("canvas");cv.width=cv.height=S;const c=cv.getContext("2d");
+  if(F.mode==="image"&&F.img){await new Promise(res=>{const im=new Image();im.onload=()=>{const m=Math.min(im.width,im.height);c.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,S,S);res()};im.onerror=res;im.src=F.img});return cv}
+  const R=S*.37,cx=S/2,cy=S/2,rs=sorted(F.ramp),an=F.ramp.angle*Math.PI/180,dx=Math.sin(an)*R,dy=-Math.cos(an)*R;
+  const g=c.createLinearGradient(cx-dx,cy-dy,cx+dx,cy+dy);rs.forEach(x=>g.addColorStop(x.p/100,x.c));
+  const rimL=hueShift(rs[0].c,60,.6),rimR=hueShift(rs.at(-1).c,-100,.66),rim=F.rim!==false;
+  if(rim){c.save();c.shadowColor=rgba(rimL,.55);c.shadowBlur=S*.13;c.beginPath();c.arc(cx,cy,R,0,7);c.fillStyle=g;c.fill();c.restore()}
+  c.beginPath();c.arc(cx,cy,R,0,7);c.fillStyle=g;c.fill();
+  if(rim){const w=R*.075,rg=c.createLinearGradient(cx-R,cy,cx+R,cy);rg.addColorStop(0,rimL);rg.addColorStop(1,rimR);c.beginPath();c.arc(cx,cy,R-w/2,0,7);c.lineWidth=w;c.strokeStyle=rg;c.stroke()}
+  const P=[[.068,-.759],[.636,-.562],[.253,-.241],[.519,-.105],[-.537,.617],[-.117,-.037],[-.414,-.142]];
+  const path=(ox,oy)=>{c.beginPath();P.forEach(([x,y],i)=>c[i?"lineTo":"moveTo"](cx+(x+ox)*R,cy+(y+oy)*R));c.closePath()};
+  path(.035,.025);c.fillStyle=mix(F.bolt,"#000000",.25);c.fill();path(0,0);c.fillStyle=F.bolt;c.fill();
+  return cv}
+async function applyFav(F){const cv=await favCanvas(F,128);document.getElementById("fav")?.remove();
+  const l=document.createElement("link");l.id="fav";l.rel="icon";l.type="image/png";l.href=cv.toDataURL("image/png");document.head.appendChild(l);const hi=document.getElementById("hicon");if(hi)hi.src=l.href;}
+{let s=null;try{s=localStorage.getItem("ht_theme")}catch(e){}try{if(s)applyTheme(JSON.parse(s));else applyFav(FAVDEF())}catch(e){applyFav(FAVDEF())}}
+
+/* write an uploaded / downloaded game profile into htmls (replaces the profile with the same name) */
+async function writeProfile(u,progress){
+  const m=u.match;let dir,folder;
+  if(await root.requestPermission({mode:"readwrite"})!=="granted")throw new Error("Write access to the htmls folder was denied.");
+  if(m){dir=m.dir;folder=m.folder}
+  else{const base0=u.folderName.replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g," ").trim().replace(/^\.+|[. ]+$/g,"")||"Game";
+    const has=async n=>{try{await root.getDirectoryHandle(n);return true}catch(e){return false}};
+    folder=base0;let n=2;while(await has(folder))folder=`${base0} (${n++})`;dir=await root.getDirectoryHandle(folder,{create:true})}
+  const cache=new Map(),inc=new Set(u.files.map(f=>f.path));
+  const dget=async parts=>{let d=dir,k="";for(const x of parts){k=k?k+"/"+x:x;let h=cache.get(k);if(!h){h=await d.getDirectoryHandle(x,{create:true});cache.set(k,h)}d=h}return d};
+  let i=0;for(const f of u.files){const parts=f.path.split("/"),nm=parts.pop();await put(await dget(parts),nm,await f.get());if(progress)progress(`Writing files ${++i}/${u.files.length}...`,i/u.files.length)}
+  if(!m&&!u.info)await put(dir,"info.txt",infoText({name:u.pi.name,description:"",tags:[],open:"tab",entry:"",url:""}));
+  const need=new Set();for(const p of inc){const parts=p.split("/");parts.pop();let k="";for(const x of parts){k=k?k+"/"+x:x;need.add(k)}}
+  const top=u.files.map(f=>f.path).filter(x=>!x.includes("/")),has2=re=>top.some(x=>re.test(x));
+  const keep=nm=>(!has2(/\.txt$/i)&&/\.txt$/i.test(nm))||(!has2(/^icon\./i)&&/^icon\./i.test(nm))||(!has2(/^banner\./i)&&/^banner\./i.test(nm));
+  const prune=async(d,pre)=>{const ents=[];for await(const e of d.entries())ents.push(e);
+    for(const [nm,h] of ents){const pth=pre+nm;if(h.kind==="file"){if(!inc.has(pth)&&!(pre===""&&keep(nm)))await d.removeEntry(nm)}
+      else if(need.has(pth))await prune(h,pth+"/");else await d.removeEntry(nm,{recursive:true})}};
+  await prune(dir,"");return folder}
+
+/* ===== updates & downloads from Google Drive or GitHub ===== */
+const upd={items:[],checked:0,error:"",busy:false,ready:false,found:null};
+const fmtSize=n=>!n?"":n<1048576?Math.max(1,Math.round(n/1024))+" KB":(n/1048576).toFixed(1)+" MB";
+const updCfg=()=>VOLT_SOURCE&&VOLT_SOURCE.type?VOLT_SOURCE:null;
+const driveId=v=>{const x=String(v||""),m=x.match(/folders\/([-\w]+)/)||x.match(/[?&]id=([-\w]+)/);return m?m[1]:x.trim()};
+const profVer=n=>{const m=String(n).replace(/\.zip$/i,"").match(/\(\s*v?(\d+(?:\.\d+)+[0-9A-Za-z.+-]*)\s*\)\s*$/);return m?m[1]:null};
+const profBase=n=>String(n).replace(/\.zip$/i,"").replace(/\s*\(\s*v?\d+(?:\.\d+)+[0-9A-Za-z.+-]*\s*\)\s*$/,"").trim();
+const newer=(a,b)=>/^\d+(\.\d+)+/.test(a)&&/^\d+(\.\d+)+/.test(b)?cmpVer(a,b)>0:a!==b;
+const dupBase=f=>profBase(f).replace(/\s*\(\d+\)\s*$/,"").trim().toLowerCase();
+const findGame=k=>games.find(x=>!x.ph&&(dupBase(x.folder)===k||profBase(x.folder).toLowerCase()===k||x.name.trim().toLowerCase()===k));
+async function listRemote(c){
+  try{
+    if(c.type==="github"){
+      const repo=String(c.repo||"").trim().replace(/^https?:\/\/github\.com\//i,"").replace(/\.git$/i,"").replace(/^\/+|\/+$/g,"");
+      if(!/^[\w.-]+\/[\w.-]+$/.test(repo))throw new Error("The GitHub repository should look like owner/repo.");
+      const path=String(c.path||"").replace(/^\/+|\/+$/g,"").split("/").filter(Boolean).map(encodeURIComponent).join("/");
+      const r=await fetch(`https://api.github.com/repos/${repo}/contents/${path}${c.branch?"?ref="+encodeURIComponent(c.branch):""}`,{headers:{Accept:"application/vnd.github+json"}});
+      if(r.status===404)throw new Error("GitHub couldn't find that repository, folder or branch. The repository has to be public.");
+      if(r.status===403||r.status===429)throw new Error("GitHub's request limit was reached. Try again in a while.");
+      if(!r.ok)throw new Error("GitHub answered "+r.status+".");
+      const a=await r.json();if(!Array.isArray(a))throw new Error("That path is a file, not a folder.");
+      return a.filter(f=>f.type==="file").map(f=>({name:f.name,size:f.size,stamp:f.sha,url:f.download_url}));
+    }
+    if(c.type==="drive"){
+      const id=driveId(c.folder),key=String(c.key||"").trim();if(!id||!key)throw new Error("Enter the Google Drive folder and your Google API key.");
+      const out=[];let tok="";
+      do{const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${id}' in parents and trashed=false`)}&fields=${encodeURIComponent("nextPageToken,files(id,name,size,modifiedTime,mimeType)")}&pageSize=1000&key=${encodeURIComponent(key)}${tok?"&pageToken="+encodeURIComponent(tok):""}`);
+        if(!r.ok){let m="";try{m=(await r.json()).error.message}catch(e){}
+          throw new Error(r.status===404?"Google Drive couldn't find that folder.":r.status===400||r.status===403?"Google Drive refused the request"+(m?" ("+m+")":"")+". Check the API key, that the Drive API is enabled for it, and that the folder is shared as 'Anyone with the link'.":"Google Drive answered "+r.status+".")}
+        const j=await r.json();for(const f of j.files||[])if(f.mimeType!=="application/vnd.google-apps.folder")out.push({name:f.name,size:+f.size||0,stamp:f.modifiedTime,url:`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${encodeURIComponent(key)}`});
+        tok=j.nextPageToken||""}while(tok);
+      return out}
+    throw new Error("No update source is set up.");
+  }catch(e){if(e instanceof TypeError)throw new Error("Couldn't reach "+(c.type==="drive"?"Google Drive":"GitHub")+". Check your internet connection.");throw e}
+}
+/* Drive download helpers: try several URL forms, retry, and report the real cause */
+function urlVariants(url){return[url]}
+let driveCool=0; /* after every key is refused, pause background downloads for a bit instead of hammering Drive */
+const VKEYS=()=>{const c=VOLT_SOURCE||{};return[c.key,...(Array.isArray(c.keys)?c.keys:[])].map(x=>String(x||"").trim()).filter((v,i,a)=>v&&a.indexOf(v)===i)};
+let keyIx=0;
+const withKey=(u,k)=>u.replace(/([?&]key=)[^&]*/,"$1"+encodeURIComponent(k));
+async function driveWhy(r){try{const j=await r.json(),x=j.error||{};return r.status+" "+((x.errors&&x.errors[0]&&x.errors[0].reason)||x.message||"")}catch(e){return String(r.status)}}
+async function fetchAny(url,init){
+  let st=0,detail="";const keys=VKEYS(),n=Math.max(keys.length,1),isApi=/[?&]key=/.test(url)&&keys.length>0;
+  let order=[];for(let i=0;i<(isApi?n:1);i++)order.push((keyIx+i)%n);
+  if(isApi){const fresh=order.filter(i=>{const o=dlKey(keys[i]);return !(o.limSince&&Date.now()-o.lastAt<60000)});order=fresh.length?fresh:order.slice(0,1)}  /* keys refused in the last minute are skipped; if all were, only one is tried */
+  const tries=order.length;
+  for(let i=0;i<tries;i++){
+    const ki=order[i],u=isApi?withKey(url,keys[ki]):url,ko=isApi?dlKey(keys[ki]):null;
+    if(ko){ko.req++;dlS.lastKey=ki}
+    try{const r=await fetch(u,init);if(r.ok){driveCool=0;if(isApi)keyIx=ki;if(ko){ko.ok++;ko.last="OK";ko.lastAt=Date.now();r.vk=ko;if(ko.limSince){ko.limSince=0;dlLog("Key "+(ki+1)+" works again - the limit has cleared","ok");dlSave()}}return r}
+      st=r.status;detail=await driveWhy(r);if(ko){ko.fail++;ko.last=detail;ko.lastAt=Date.now();if(r.status===403||r.status===429)dlLim(ko,detail)}
+      dlLog("Key "+(ki+1)+" of "+n+": Drive said "+detail,"w");
+      if(r.status===404)break;continue}
+    catch(e){if(init&&init.signal&&init.signal.aborted)throw e;
+      detail="Google blocked the download (its refusal carries no CORS header, which is how Drive reports a download limit or quota)";
+      if(ko){ko.fail++;ko.last="blocked (limit?)";ko.lastAt=Date.now();dlLim(ko,"")}
+      dlLog("Key "+(ki+1)+" of "+n+": blocked (probably Drive's download limit)","w")}
+    if(i<tries-1)dlLog("Trying backup key "+(order[i+1]+1)+" of "+n)}
+  if(st!==404){driveCool=Date.now()+45000;dlLog("Every key was refused - background downloads paused for 45s","e")}
+  const e=new Error(st?"status "+st:"blocked");e.status=st;e.detail=detail;throw e}
+function dlError(label,e){
+  if(!navigator.onLine)return new Error("You're offline. Couldn't download "+label+".");
+  if(e&&e.status===403||e&&e.status===429)return new Error("Google Drive refused "+label+" ("+(e.detail||e.status)+"). That means a download limit was reached or the file isn't shared as 'Anyone with the link'. Wait a while and try again.");
+  if(e&&e.status===404)return new Error("Google Drive couldn't find "+label+". It may have been moved or deleted. Press Refresh.");
+  if(e&&e.status)return new Error(`Downloading ${label} failed (${e.status}).`);
+  return new Error("Couldn't download "+label+(e&&e.detail?" - Drive/browser said: "+e.detail+".":". The request was blocked (an ad-blocker/firewall, a download limit, or the file isn't shared publicly).")+" Details are in the console (F12).")}
+/* ===== install progress (store button + loading card) ===== */
+const inst=new Map();
+const sProg=new Map();
+const phName=o=>o.pct+"% - "+o.name;
+const barH=(key,p)=>`<div class="bload" data-lk="${esc(key)}"><div class="tr"><i style="width:${p}%"></i></div><b>${p}%</b></div>`;
+function updBars(key,p){document.querySelectorAll('[data-lk="'+CSS.escape(key)+'"]').forEach(e=>{const f=e.querySelector(".tr i"),t=e.querySelector("b");if(f)f.style.width=p+"%";if(t)t.textContent=p+"%"})}
+function sSetLP(key,p){sProg.set(key,p);updBars(key,p)}
+function instPhAdd(o){
+  if(o.done||o.ph||!root||o.key==="launcher")return;
+  const it=(typeof store!=="undefined"&&store.items||[]).find(i=>i.key===o.key),m=(it&&it.m)||{};
+  o.ph={ph:true,key:o.key,folder:"__inst__"+o.key,name:phName(o),description:"",tags:[],url:"",entry:"",open:"tab",dir:null,
+    icon:sImg(m.icon)||null,banner:sImg(m.banner)||null};
+  games.push(o.ph);render()}
+function instPhAttach(){inst.forEach(o=>{if(!o.done&&o.ph&&!games.includes(o.ph))games.push(o.ph)})}
+function instPhRemove(o){o.done=true;if(o.ph){games=games.filter(g=>g!==o.ph);if(selected===o.ph)selected=null;o.ph=null;render()}}
+function instSet(key,name,pct,phase){
+  let o=inst.get(key);if(!o){o={key,name,pct:-1,phase:""};inst.set(key,o)}
+  const p=Math.max(0,Math.min(100,Math.round(pct)));
+  if(p===o.pct&&(phase||o.phase)===o.phase)return;
+  const first=o.pct<0;o.pct=p;if(phase)o.phase=phase;
+  if(first)instPhAdd(o);
+  else if(o.ph)o.ph.name=phName(o);
+  instDraw()}
+function instDone(key){const o=inst.get(key);inst.delete(key);if(o&&!o.done)instPhRemove(o);instDraw();try{if(view==="store")renderStore()}catch(e){}}
+function instDraw(){
+  let box=document.getElementById("instbox");
+  if(!inst.size){if(box)box.remove()}
+  else{
+    if(!box){box=document.createElement("div");box.id="instbox";document.body.appendChild(box)}
+    box.innerHTML=[...inst.values()].map(o=>`<div class="ic"><div class="ih">Installing game profile</div><div class="in">${esc(o.name)}</div><div class="is">${esc(o.phase||"")}</div><div class="ir"><div class="ipb"><i style="width:${o.pct}%"></i></div><b>${o.pct}%</b></div></div>`).join("")}
+  inst.forEach(o=>{
+    document.querySelectorAll('[data-ik="'+CSS.escape(o.key)+'"]').forEach(e=>{
+      const f=e.querySelector(".ipb i"),t=e.querySelector(".ipt");if(f)f.style.width=o.pct+"%";if(t)t.textContent=o.pct+"%"});
+    updBars(o.key,o.pct);
+    document.querySelectorAll('[data-phn="'+CSS.escape(o.key)+'"]').forEach(e=>e.textContent=phName(o));
+    document.querySelectorAll('[data-phs="'+CSS.escape(o.key)+'"]').forEach(e=>e.textContent=o.phase||"")})}
+const instBar=key=>{const o=inst.get(key),p=o?Math.max(o.pct,0):0;return `<div class="iprog" data-ik="${esc(key)}"><div class="ipb"><i style="width:${p}%"></i></div><span class="ipt">${p}%</span></div>`};
+/* ===== DOWNLOAD QUEUE: everything from Drive goes through here, ONE request at a time =====
+   priority 0 = game profile installs, 1 = launcher update, 2 = store listing / notices, 3 = store icons + info (background).
+   A background (3) request is paused and re-queued automatically when something more important arrives. */
+/* ===== download stats + live log (shown in Settings > Advanced) ===== */
+const dlS={t0:Date.now(),bytes:0,peak:0,pk:0,samples:[],lastKey:-1};
+const dlK={};
+const dlBg={day:"",bytes:0};   /* bytes downloaded today by background store-info reads */
+const bgLimit=()=>(+(typeof lib!=="undefined"&&lib.bgBudget)||50)*1048576;
+const sz=n=>!n?"0 KB":n<1024?Math.round(n)+" B":n<1048576?(n/1024).toFixed(n<10240?1:0)+" KB":(n/1048576).toFixed(1)+" MB";
+const PN=["Install","Launcher","Store list","Store info"];
+const keyId=k=>String(k).slice(0,6)+"..."+String(k).slice(-4);
+const dayNow=()=>new Date().toISOString().slice(0,10);
+function dlById(id){let o=dlK[id];if(!o)o=dlK[id]={id,req:0,ok:0,fail:0,bytes:0,day:dayNow(),dayBytes:0,life:0,last:"",lastAt:0,limSince:0,limKind:"",limReason:""};if(o.day!==dayNow()){o.day=dayNow();o.dayBytes=0}return o}
+const dlKey=k=>dlById(keyId(k));
+function dlLog(msg,lvl){dlPush(msg,lvl);if(lvl==="w"||lvl==="e"){dlMute++;try{console.warn(msg)}finally{dlMute--}}}
+const dlSpeed=ms=>{const now=Date.now();let b=0;for(const x of dlS.samples)if(x[0]>=now-ms)b+=x[1];return b/(ms/1000)};
+let dlT=0;
+function dlSave(){if(dlT)return;dlT=setTimeout(()=>{dlT=0;try{const o={};for(const k in dlK){const v=dlK[k];o[k]={day:v.day,dayBytes:v.dayBytes,life:v.life,limSince:v.limSince,limKind:v.limKind,limReason:v.limReason}}o.__bg={day:dlBg.day,bytes:dlBg.bytes};kv("set",o,"dlstats")}catch(e){}},4000)}
+async function dlLoad(){try{const o=await kv("get",null,"dlstats");if(o&&typeof o==="object")for(const id in o){if(id==="__bg"){if(o[id].day===dayNow()){dlBg.day=dayNow();dlBg.bytes=Math.max(dlBg.bytes,o[id].bytes||0)}continue}const v=dlById(id);if(o[id].day===dayNow())v.dayBytes=Math.max(v.dayBytes,o[id].dayBytes||0);v.life=Math.max(v.life,o[id].life||0);if(o[id].limSince&&Date.now()-o[id].limSince<26*36e5){v.limSince=o[id].limSince;v.limKind=o[id].limKind||"unknown";v.limReason=o[id].limReason||""}}}catch(e){}}
+function dlAdd(r,n){if(!n)return;const o=r&&r.vk;if(o){o.bytes+=n;o.dayBytes+=n;o.life+=n}
+  dlS.bytes+=n;const now=Date.now();dlS.samples.push([now,n]);while(dlS.samples.length&&dlS.samples[0][0]<now-60000)dlS.samples.shift();
+  if(now-dlS.pk>500){dlS.pk=now;dlS.peak=Math.max(dlS.peak,dlSpeed(2000))}
+  if(netQ.cur){netQ.cur.got=(netQ.cur.got||0)+n;if(netQ.cur.pri>=3){if(dlBg.day!==dayNow()){dlBg.day=dayNow();dlBg.bytes=0}dlBg.bytes+=n}}dlSave()}
+function dlLim(o,detail){if(!o.limSince)o.limSince=Date.now();o.limReason=detail||"";
+  o.limKind=/download|cannotDownload/i.test(detail)?"file":/rateLimit/i.test(detail)?"minute":/dailyLimit|quotaExceeded/i.test(detail)?"daily":"unknown";dlSave()}
+function pacificMidnight(){const now=new Date(),pt=new Intl.DateTimeFormat("en-US",{timeZone:"America/Los_Angeles",hour12:false,hour:"2-digit",minute:"2-digit",second:"2-digit"}).formatToParts(now),g=t=>+pt.find(x=>x.type===t).value;
+  return now.getTime()+(86400-((g("hour")%24)*3600+g("minute")*60+g("second")))*1000}
+const fmtDur=ms=>{ms=Math.max(0,Math.round(ms/1000));const h=Math.floor(ms/3600),m=Math.floor(ms%3600/60);return h?h+"h "+m+"m":m?m+"m "+(ms%60)+"s":ms+"s"};
+const fmtClock=t=>new Date(t).toLocaleString([],{weekday:"short",hour:"numeric",minute:"2-digit"});
+const sizeOfUrl=u=>{try{const it=typeof store!=="undefined"&&(store.items||[]).find(i=>i.file&&i.file.url===u);return it?+it.file.size||0:0}catch(e){return 0}};
+const nameOfUrl=u=>{try{const it=typeof store!=="undefined"&&(store.items||[]).find(i=>i.file&&i.file.url===u);return it?it.file.name:"file"}catch(e){return"file"}};
+const netQ={cur:null,list:[],seq:0};
+function qRun(pri,fn,label,opts){
+  label=label||"request";
+  return new Promise((res,rej)=>{
+    netQ.list.push({pri,fn,res,rej,label,noCool:!!(opts&&opts.noCool),seq:netQ.seq++});
+    netQ.list.sort((a,b)=>a.pri-b.pri||a.seq-b.seq);
+    dlLog("Queued ["+PN[pri]+"] "+label+" ("+netQ.list.length+" waiting)");
+    const c=netQ.cur;if(c&&c.pri>=3&&pri<c.pri){c.bumped=true;dlLog("Pausing ["+PN[c.pri]+"] "+c.label+" - "+PN[pri]+" goes first","w");try{c.ac.abort()}catch(e){}}
+    qPump()})}
+function qPump(){
+  if(netQ.cur)return;const h=netQ.list[0];if(!h)return;
+  if(h.pri>=3&&dlBg.bytes>=bgLimit()){const t=netQ.list.shift();dlLog("Today's background download budget ("+Math.round(bgLimit()/1048576)+" MB) is used up - skipping "+t.label,"w");t.rej(Object.assign(new Error("budget"),{status:0,budget:true,detail:"today's background download budget is used up (Settings > Advanced)"}));setTimeout(qPump,0);return}
+  if(h.pri>=3&&!h.noCool&&Date.now()<driveCool){clearTimeout(netQ.cd);netQ.cd=setTimeout(qPump,Math.min(5000,driveCool-Date.now()+50));return}
+  const t=netQ.list.shift();
+  const ac=new AbortController();t.ac=ac;t.bumped=false;t.stalled=false;t.got=0;t.total=0;t.t0=Date.now();netQ.cur=t;
+  dlLog("Start ["+PN[t.pri]+"] "+t.label);
+  /* watchdog: if a request makes no progress for a while, cancel it so the queue can never freeze */
+  const limit=t.pri>=3?20000:45000;let wd;
+  const touch=()=>{clearTimeout(wd);wd=setTimeout(()=>{t.stalled=true;dlLog("Stalled - no data for "+limit/1000+"s, cancelling "+t.label,"w");try{ac.abort()}catch(e){}},limit)};
+  touch();
+  Promise.resolve().then(()=>t.fn(ac.signal,touch)).then(v=>{
+    const sec=Math.max(.05,(Date.now()-t.t0)/1000);dlLog("Done "+t.label+" - "+sz(t.got)+" in "+sec.toFixed(1)+"s ("+sz(t.got/sec)+"/s) via key "+(dlS.lastKey+1),"ok");t.res(v)},e=>{
+    if(t.bumped&&!t.stalled&&ac.signal.aborted){t.bumped=false;netQ.list.push(t);netQ.list.sort((x,y)=>x.pri-y.pri||x.seq-y.seq)}
+    else{dlLog("Failed "+t.label+" - "+(t.stalled?"timed out":(e&&e.detail)||(e&&e.message)||e),"e");t.rej(t.stalled?Object.assign(new Error("timed out"),{status:0,detail:"no data from Drive for "+limit/1000+"s (request timed out)"}):e)}
+  }).finally(()=>{clearTimeout(wd);netQ.cur=null;setTimeout(qPump,t.pri>=3?300:0)})}
+async function fetchBlob(url,label,onp,size,pri=2){
+  let last;
+  for(let t=0;t<2;t++){
+    try{return await qRun(pri,async(sg,touch)=>{
+      const r=await fetchAny(url,{signal:sg});touch();
+      if(!onp||!r.body||!r.body.getReader){const b=await r.blob();dlAdd(r,b.size);onp&&onp(1,1);return b}
+      const total=+r.headers.get("content-length")||+size||0,rd=r.body.getReader(),parts=[];let got=0;if(netQ.cur)netQ.cur.total=total;
+      for(;;){const d=await rd.read();if(d.done)break;parts.push(d.value);got+=d.value.length;dlAdd(r,d.value.length);touch();onp(got,total)}
+      return new Blob(parts)},"Download: "+label)}
+    catch(e){last=e;if(e.status===404||e.status===403||e.status===429||e.budget)break;await new Promise(r=>setTimeout(r,700*(t+1)))}}
+  throw dlError(label,last)}
+async function checkUpdates(manual){
+  if(upd.busy)return;const c=updCfg();
+  if(!c){upd.items=[];upd.error="";renderBell();return}
+  if(!net&&manual){upd.error="You're offline.";renderBell();return}
+  upd.busy=true;upd.error="";renderBell();
+  try{
+    const files=await listRemote(c),items=[];let changed=false;
+    try{await syncNotes(files)}catch(e){console.warn("notices",e)}
+    const L=files.filter(f=>/\.html?$/i.test(f.name)&&nameVer(f.name)).sort((a,b)=>cmpVer(nameVer(b.name),nameVer(a.name)))[0];
+    if(L&&cmpVer(nameVer(L.name),VOLT_VER)>0)items.push({kind:"launcher",key:"launcher",stamp:nameVer(L.name),title:`Volt v${nameVer(L.name)} is available`,sub:`You're on v${VOLT_VER}`,file:L});
+    lib.remote=lib.remote||{};
+    for(const f of files.filter(f=>/\.zip$/i.test(f.name))){
+      const name=profBase(f.name),key=name.toLowerCase(),stamp=profVer(f.name)||f.stamp||"",rec=lib.remote[key],g=findGame(key),hid=(lib.dismissed||[]).includes(key+"@"+stamp);
+      if(!g){if(!hid)items.push({kind:"new",key,stamp,name,title:`New game profile: ${name}`,sub:fmtSize(f.size),file:f})}
+      else if((!rec||newer(stamp,rec.stamp))&&!hid)items.push({kind:"upd",key,stamp,name,title:`Update available: ${name}`,sub:fmtSize(f.size),file:f});
+    }
+    upd.items=items;upd.checked=Date.now();upd.found={launcher:L?nameVer(L.name):"",zips:files.filter(f=>/\.zip$/i.test(f.name)).length,total:files.length};
+    try{localStorage.setItem("ht_lastcheck",String(upd.checked));localStorage.setItem("ht_upd",JSON.stringify({t:upd.checked,items}))}catch(e){}
+    if(changed)saveLib();
+  }catch(e){upd.error=e&&e.message?e.message:String(e);try{localStorage.setItem("ht_lastcheck",String(Date.now()))}catch(x){}}
+  upd.busy=false;renderBell();
+}
+function maybeAutoCheck(){
+  const c=updCfg();if(!c||upd.busy||!net)return;
+  let t=0;try{t=+localStorage.getItem("ht_lastcheck")||0}catch(e){}
+  if(Date.now()-t<30*60*1000)return;checkUpdates(false)}
+function updItems(){
+  return upd.items.filter(x=>{if(x.kind==="launcher")return cmpVer(x.stamp,VOLT_VER)>0;
+    if(!upd.ready||!root)return false;
+    const g=findGame(x.key),rec=(lib.remote||{})[x.key];return x.kind==="new"?!g:!!g&&(!rec||newer(x.stamp,rec.stamp))})}
+/* ===== notices sent from the Volt Publisher (Volt.notices.json in the update folder) ===== */
+const notes={list:[],stamp:"",seen:[]};
+try{notes.seen=JSON.parse(localStorage.getItem("ht_noteseen")||"[]")}catch(e){}
+try{const c=JSON.parse(localStorage.getItem("ht_notes")||"null");if(c){notes.list=c.list||[];notes.stamp=c.stamp||""}}catch(e){}
+const notesUnseen=()=>notes.list.filter(n=>!notes.seen.includes(n.id));
+function notesSave(){try{localStorage.setItem("ht_noteseen",JSON.stringify(notes.seen.slice(-300)))}catch(e){}
+  try{localStorage.setItem("ht_notes",JSON.stringify({stamp:notes.stamp,list:notes.list}))}catch(e){try{localStorage.setItem("ht_notes",JSON.stringify({stamp:"",list:notes.list.map(n=>({...n,images:[]}))}))}catch(x){}}}
+async function syncNotes(files){
+  const f=files.find(x=>/\.notices\.json$/i.test(x.name));
+  if(!f){if(notes.list.length||notes.stamp){notes.list=[];notes.stamp="";notesSave()}return}
+  if(f.stamp&&f.stamp===notes.stamp)return;
+  const j=JSON.parse(await(await fetchBlob(f.url,f.name)).text()),arr=Array.isArray(j)?j:(j&&j.notices)||[];
+  notes.list=arr.filter(n=>n&&typeof n.id==="string"&&(n.title||n.text||(n.images||[]).length)).map(n=>({id:String(n.id).slice(0,60),title:String(n.title||"").slice(0,120),text:String(n.text||"").slice(0,3000),date:String(n.date||""),images:(Array.isArray(n.images)?n.images:[]).map(sImg).filter(Boolean).slice(0,3)})).sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,30);
+  notes.stamp=f.stamp||"";notesSave()}
+function notesHtml(){
+  const L=notesUnseen();if(!L.length)return"";
+  return`<div class="nlab">Messages</div>`+L.map(n=>`<div class="nn"><div class="nnh"><b>${esc(n.title||"Message")}</b><button class="btn" data-nd="${esc(n.id)}" title="Dismiss" type="button">&#10005;</button></div>${n.date?`<small>${esc(new Date(n.date).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}))}</small>`:""}${n.text?`<div class="nnt">${esc(n.text).replace(/\n/g,"<br>")}</div>`:""}${n.images.length?`<div class="nni">${n.images.map((u,i)=>`<img src="${u}" data-ni="${esc(n.id)}|${i}" alt="">`).join("")}</div>`:""}</div>`).join("")}
+function notesWire(N){
+  N.querySelectorAll("[data-nd]").forEach(b=>b.onclick=e=>{e.stopPropagation();notes.seen.push(b.dataset.nd);notesSave();renderBell()});
+  N.querySelectorAll("[data-ni]").forEach(im=>im.onclick=e=>{e.stopPropagation();modal(`<div class="dlg" style="max-width:92vw"><img src="${im.src}" style="max-width:100%;max-height:78vh;display:block;margin:0 auto"><div class="foot"><button class="btn" id="cx">Close</button></div></div>`);$("#cx").onclick=closeModal})}
+function renderBell(){
+  const it=updItems(),b=$("#bellb");if(!b)return;
+  const tot=it.length+notesUnseen().length;$("#bcnt").textContent=tot||"";b.classList.toggle("has",tot>0);b.title=tot?`${tot} notification${tot>1?"s":""}`:"Notifications";
+  if($("#notif").classList.contains("on"))drawNotif()}
+function drawNotif(){
+  const c=updCfg(),it=updItems(),N=$("#notif");
+  let h=`<div class="nh"><span>Notifications</span>${c?`<button class="btn" id="nchk" type="button" ${upd.busy?"disabled":""}>${upd.busy?"Checking...":"Check now"}</button>`:""}</div>`;
+  if(!c)h+=`<div class="nf">No update source is connected yet. Connect a Google Drive folder or a GitHub repository to get launcher updates and game profiles to download.<br><br><button class="btn" id="nset" type="button">Set it up</button></div>`;
+  else{
+    if(upd.error)h+=`<div class="nf" style="color:#e66">${esc(upd.error)}</div>`;
+    h+=notesHtml();
+    if(it.length)h+=`<div class="nlab">Updates</div>`;
+    h+=it.map((x,i)=>`<div class="ni"><div class="tx"><b>${esc(x.title)}</b><small>${esc(x.sub||"")}</small></div><button class="play" style="padding:5px 14px;font-size:12px" data-n="${i}" data-a="go" ${x.busy?"disabled":""}>${x.busy?"Working... "+((inst.get(x.key)||{}).pct>=0?inst.get(x.key).pct+"%":""):x.kind==="launcher"?"Update Volt":x.kind==="new"?"Download":"Update"}</button>${x.kind!=="launcher"?`<button class="btn" data-n="${i}" data-a="no" title="Don't remind me about this version" type="button">&#10005;</button>`:""}</div>`).join("");
+    if(!it.length&&!upd.error&&!notesUnseen().length)h+=`<div class="nf">You're up to date.</div>`;
+    if(it.filter(x=>x.kind!=="launcher").length>1)h+=`<div class="nf"><button class="btn" id="nall" type="button">Download all profiles</button></div>`;
+    h+=`<div class="nf">${upd.checked?"Last checked "+new Date(upd.checked).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Not checked yet"} &middot; ${c.type==="drive"?"Google Drive":"GitHub"}</div>`}
+  N.innerHTML=h;notesWire(N);
+  const q=x=>N.querySelector(x);
+  if(q("#nchk"))q("#nchk").onclick=()=>checkUpdates(true);
+  if(q("#nset"))q("#nset").onclick=()=>{N.classList.remove("on");setView("settings");setTimeout(()=>{const e=$("#updsec");if(e)e.scrollIntoView()},60)};
+  if(q("#nall"))q("#nall").onclick=async()=>{for(const x of it.filter(y=>y.kind!=="launcher"))await doItem(x)};
+  N.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{const x=it[+b.dataset.n];if(!x)return;
+    if(b.dataset.a==="go")doItem(x);else{(lib.dismissed=lib.dismissed||[]).push(x.key+"@"+x.stamp);saveLib();upd.items=upd.items.filter(y=>y!==x);renderBell()}})}
+async function doItem(x){
+  if(x.busy)return;x.busy=true;upd.error="";renderBell();
+  try{const done=x.kind==="launcher"?await installRemoteLauncher(x):await installRemoteProfile(x);if(done!==false)upd.items=upd.items.filter(y=>y!==x)}
+  catch(e){upd.error=e.message||String(e)}
+  x.busy=false;renderBell()}
+async function installRemoteProfile(x){
+  if(!root)throw new Error("Select your htmls folder first (Settings > Folders).");
+  const nm=x.name||profBase(x.file.name);
+  instSet(x.key,nm,0,"Waiting in download queue...");
+  try{
+    let blob=await(async()=>{const hit=fullCache.get(x.file.url+"|"+(+x.file.size||0));if(!hit)return null;
+      try{const b=await hit;dlS.hits=(dlS.hits||0)+1;dlS.saved=(dlS.saved||0)+b.size;dlLog("Reusing the copy already downloaded for "+nm+" - saved a "+sz(b.size)+" download","ok");instSet(x.key,nm,70,"Using the downloaded copy...");return b}catch(e){return null}})()||await fetchBlob(x.file.url,x.file.name,(g,t)=>instSet(x.key,nm,t?g/t*70:Math.min(65,g/1048576*3),"Downloading "+fmtSize(g)+(t?" of "+fmtSize(t):"")),x.file.size,0);
+    instSet(x.key,nm,72,"Reading profile files...");
+    const pr=detectProfile(await readZip(blob),x.name);
+    if(!pr.files.length)throw new Error(x.file.name+" is empty.");
+    const pi=pr.info?parseInfo(await(await pr.info.get()).text(),pr.folderName):{name:pr.folderName},lc=v=>String(v).trim().toLowerCase();
+    const rec0=(lib.remote||{})[x.key],real=games.filter(g=>!g.ph);
+    const match=(rec0&&rec0.folder&&real.find(g=>g.folder===rec0.folder))||real.find(g=>lc(g.folder)===lc(pr.folderName))||real.find(g=>lc(g.name)===lc(pi.name))||findGame(x.key)||real.find(g=>dupBase(g.folder)===dupBase(pr.folderName))||null;
+    instSet(x.key,nm,75,"Installing "+pi.name+"...");
+    const folder=await writeProfile({...pr,pi,match},(tx,f)=>instSet(x.key,nm,75+(f||0)*22,tx));
+    instSet(x.key,nm,98,"Finishing up...");
+    (lib.remote=lib.remote||{})[x.key]={stamp:x.stamp,name:x.name,folder};await saveLib();
+    /* old copies like "Game (2)" left behind by earlier updates */
+    const dups=real.filter(g=>g.folder!==folder&&dupBase(g.folder)===dupBase(folder));
+    if(dups.length&&confirm(`Found old copy/copies of "${pi.name}" from earlier updates:\n\n${dups.map(d=>d.folder).join("\n")}\n\nDelete them so only the updated profile is left?`)){
+      for(const d of dups){try{await root.removeEntry(d.folder,{recursive:true});lib.favs=(lib.favs||[]).filter(f=>f!==d.folder);(lib.groups||[]).forEach(gr=>{gr.games=gr.games.filter(f=>f!==d.folder)})}catch(e){console.warn("couldn't remove duplicate",d.folder,e)}}
+      await saveLib()}
+    instSet(x.key,nm,100,"Installed");
+    { const o=inst.get(x.key);if(o)instPhRemove(o) }
+    await load(root,folder);status(`${match?"Updated":"Downloaded"} "${pi.name}" (${pr.files.length} files).`);
+    instSet(x.key,nm,100,"Installed");await new Promise(r=>setTimeout(r,700))
+  }finally{instDone(x.key)}}
+async function installRemoteLauncher(x){
+  const nv=nameVer(x.file.name);
+  if(!base)throw new Error("Link your launcher folder first (Settings > Folders > Select launcher folder), then press Update Volt again.");
+  if(!confirm(`Update Volt from v${VOLT_VER} to v${nv}? The launcher will reload.`))return false;
+  const lk="launcher",ln="Volt launcher v"+nv;instSet(lk,ln,0,"Starting download...");let txt;
+  try{txt=await(await fetchBlob(x.file.url,x.file.name,(g,t)=>instSet(lk,ln,t?g/t*100:50,"Downloading "+fmtSize(g)+(t?" of "+fmtSize(t):"")),x.file.size,1)).text()}finally{instDone(lk)}
+  if(!(txt.includes("VOLT_VERSION")||/<title>[^<]*Volt/i.test(txt)))throw new Error("The downloaded file doesn't look like a Volt launcher.");
+  await swapLauncher(x.file.name,txt,nv);status(`Updated to v${nv}. Reloading...`)}
+function updSettings(){
+  const g=id=>$("#"+id),st=g("ustat");
+  const last=()=>upd.checked?"Last checked "+new Date(upd.checked).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+".":"Not checked yet.";
+  st.textContent=updCfg()?last():"No update source is built into this launcher.";
+  g("utest").onclick=async()=>{g("ustat").style.color="";g("ustat").textContent="Checking...";await checkUpdates(true);
+    const n=updItems().length,f=upd.found;g("ustat").style.color=upd.error?"#e66":"";
+    g("ustat").textContent=upd.error||(updCfg()?`Drive has ${f&&f.total!=null?f.total:0} file(s): launcher ${f&&f.launcher?"v"+f.launcher:"none found"}, ${f?f.zips:0} game profile(s). You are running v${VOLT_VER}. `+(n?`${n} update(s) available, see the bell at the top.`:"You're up to date.")+(root?"":" Your games folder isn't loaded, so game updates are hidden until you press Load library or Select htmls folder."):"No source set.")}}
+const launcherName=()=>decodeURIComponent(location.pathname.split("/").pop())||"launcher.html";
+/* the version is the number in brackets in the file name, e.g. "Volt (1.2.0).html" (needs at least one dot) */
+const nameVer=n=>{const m=String(n).match(/\(\s*v?(\d+(?:\.\d+)+[0-9A-Za-z.+-]*)\s*\)\s*(?:\.html?)?\s*$/i);return m?m[1]:null};
+const VOLT_VER=(()=>{const a=nameVer(launcherName());return a&&cmpVer(a,VOLT_VERSION)>0?a:VOLT_VERSION})();
+function cmpVer(a,b){const p=v=>String(v).split(/[.\-+]/).map(x=>parseInt(x,10)||0),x=p(a),y=p(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0?1:-1}return 0}
+const vmsg=(t,bad)=>{const m=$("#vmsg");if(m){m.style.color=bad?"#e66":"";m.textContent=t}};
+async function updateLauncher(h,ok){
+  try{
+    if(h.kind!=="file")return vmsg("Choose the new launcher .html file.",1);
+    const txt=await(await h.getFile()).text();
+    if(!(txt.includes("VOLT_VERSION")||/<title>[^<]*Volt/i.test(txt)))return vmsg("That file doesn't look like a Volt launcher.",1);
+    const vm=txt.match(/VOLT_VERSION\s*=\s*["']([^"']+)["']/),nv=nameVer(h.name)||(vm&&vm[1]);
+    if(!nv)return vmsg("Volt can't find a version for that file. Put the number in brackets in its name, like Volt (1.2.0).html",1);
+    const c=cmpVer(nv,VOLT_VER);
+    if(!ok&&!confirm(c>0?`Update Volt from v${VOLT_VER} to v${nv}? The launcher will reload.`:c===0?`That file is the same version (v${nv}). Replace the launcher with it anyway?`:`That file (v${nv}) is older than the one you're running (v${VOLT_VER}). Replace it anyway?`))return;
+    if(!base){const box=$("#vmsg");box.style.color="";box.innerHTML=`Volt needs your launcher folder (the folder that contains <b>${esc(launcherName())}</b>) to swap the files. <button class="btn" id="vlink" type="button">Link launcher folder</button>`;
+      $("#vlink").onclick=async()=>{if(await linkBase())updateLauncher(h,true)};return}
+    await applyLauncher(h,txt,nv)
+  }catch(e){vmsg(e.message||String(e),1)}
+}
+async function swapLauncher(newName,txt,nv,srcHandle){   /* writes the new launcher over the running file (same name, so the page address stays valid), backs the old one up, then reloads */
+  const oldName=launcherName();let cur;
+  if(!base)throw new Error("Link your launcher folder first (the folder that contains "+oldName+").");
+  try{cur=await base.getFileHandle(oldName)}catch(e){throw new Error(`The linked folder doesn't contain ${oldName}. Link the folder that holds the launcher you opened.`)}
+  if(await base.requestPermission({mode:"readwrite"})!=="granted")throw new Error("Write access to the launcher folder was denied.");
+  if(srcHandle&&await cur.isSameEntry(srcHandle))throw new Error("That is the launcher file you're already running. Choose the new file instead.");
+  const old=await(await cur.getFile()).text();
+  const bn=oldName.replace(/\.html?$/i,"").replace(/\s*\(\s*v?\d+(?:\.\d+)+[0-9A-Za-z.+-]*\s*\)\s*$/,"").trim()||"Volt";
+  await put(await base.getDirectoryHandle("Launcher Backups",{create:true}),`${bn} (${VOLT_VER}).html`,old);
+  await put(base,oldName,txt.replace(/(VOLT_VERSION\s*=\s*["'])[^"']*(["'])/,`$1${nv}$2`));
+  setTimeout(()=>location.reload(),900)}
+async function applyLauncher(h,txt,nv){try{await swapLauncher(h.name,txt,nv,h);vmsg(`Updated to v${nv}. Reloading...`)}catch(e){vmsg(e.message||String(e),1)}}
+function renderHelp(){
+  const ok=(b,t)=>`<div><span style="color:${b?"#7ccf5a":"#e8a04a"}">${b?"&#10003;":"&#9679;"}</span> ${t}</div>`;
+  $("#help").innerHTML=`<div class="st"><h2 class="title" style="padding:24px 0 0">Help &amp; setup</h2>
+  <section><h3>1. Set up your folders</h3>
+    <p>Volt keeps everything in plain folders next to <b>launcher.html</b>:</p>
+    <pre>Volt/                   any name you like
+  launcher.html
+  htmls/                your games and websites
+  Launcher Themes/      created for you when you save a theme</pre>
+    <ol>
+      <li>Make a folder, put <b>launcher.html</b> in it, and make an empty folder named <b>htmls</b> beside it.</li>
+      <li>Open <b>launcher.html</b> in <b>Chrome or Edge</b>. Other browsers can't read folders.</li>
+      <li>Press <b>Select htmls folder</b> below (or in Settings &gt; Folders). Choose the folder that holds <b>launcher.html</b> and <b>htmls</b>: Volt finds htmls itself and sets up Launcher Themes. Choosing htmls directly works too, but then themes need the second button.</li>
+      <li>When the browser asks, allow it to <b>view and edit</b> the folder. Volt needs that to save profiles, groups and themes.</li>
+    </ol>
+    <div class="pg"><b>Your setup right now</b>
+      ${ok(!!root,"Games folder: "+(root?esc(root.name):"not selected yet"))}
+      ${ok(!!themesDir,"Launcher folder: "+(themesDir&&base?esc(base.name)+" / Launcher Themes":"not linked yet (only needed to save themes)"))}
+      <div style="margin-top:8px"><button class="btn" id="hgames">${root?"Change":"Select"} htmls folder</button> <button class="btn" id="hbase">${themesDir?"Change":"Select"} launcher folder</button> <button class="btn" id="hset">Open Settings</button></div></div>
+  </section>
+  <section><h3>2. Adding games</h3>
+    <p>The easy way: press <b>+ Add a game</b> in the Library tab. Drop in a single HTML file or a whole game folder and Volt builds the folder for you. By hand, each game is one folder inside htmls:</p>
+    <pre>htmls/
+  My Game/
+    info.txt        the profile (name, description, tags)
+    icon.png        small icon (png, jpg, gif or webp)
+    banner.jpg      wide banner
+    game/
+      index.html    the game itself (must be called index.html)</pre>
+    <p><b>info.txt</b> is plain text:</p>
+    <pre>name: My Game
+tags: puzzle, arcade
+open: tab
+entry: game/index.html
+description: What the game is about.</pre>
+    <p><code>open</code> can be <b>tab</b> (new tab), <b>launcher</b> (inside Volt) or <b>ask</b>. New profiles default to a new tab. Right-click any game and choose <b>Properties</b> to edit all of this without touching the file, or <b>Local files</b> to browse what is inside its folder.</p>
+    <p><b>Updating a game:</b> press <b>+ Add a game</b>, choose <b>Update an existing game</b>, then drop the new version of the game profile (the folder, or a .zip of it). The profile with the same name is replaced. You can also drop a whole game profile folder or .zip straight onto the normal <b>Add a game</b> box and it is imported as a profile.</p>
+  </section>
+  <section><h3>3. Website profiles</h3>
+    <p>Choose <b>Website link</b> when adding a game to link a site such as Scratch. The profile gets the <b>Website</b> tag automatically and a purple <b>WEB</b> ribbon on its banner. Untick <b>Show the WEB ribbon</b> in its Properties to hide the ribbon. In info.txt:</p>
+    <pre>name: Scratch
+tags: coding, Website
+url: https://scratch.mit.edu
+ribbon: on</pre>
+    <p>Anything tagged <b>Website</b> is grayed out and can't be opened while you're offline. Turn that off in Settings &gt; Folders.</p>
+  </section>
+  <section><h3>4. Groups, themes and favicon</h3>
+    <ul>
+      <li><b>Store</b> tab: browse the game profiles published to your Drive folder, open a game page with its screenshots and description, and press <b>Install</b> (or <b>Update</b>). Installed games land in your Library.</li>
+      <li><b>Favorites and groups</b> are saved in <b>htmls/library.json</b>. Right-click a game or a group header for options.</li>
+      <li><b>Themes</b> are single .txt files in <b>Launcher Themes</b>, with any pictures and the theme's favicon stored inside. Copy a file there to share a theme. Make them in Settings &gt; Launcher theme.</li>
+      <li><b>Updating Volt itself:</b> Volt's version is shown at the top left. To update by hand, open <b>Settings &gt; Launcher version</b> and give it the newer launcher file. Volt compares the numbers, copies the old launcher into <b>Launcher Backups</b>, writes the new one over the launcher file (the file name stays the same) and reloads. The launcher folder must be linked first.</li>
+    </ul>
+  </section>
+  <section><h3>5. Updates and game downloads</h3>
+    <p>Volt checks the shared Google Drive folder for a newer launcher and for new or changed game profiles when it opens and every 30 minutes. The blue bell at the top shows what it found and installs it with one click. You can also press <b>Check for updates now</b> in Settings. Nothing is installed without you pressing the button.</p>
+  </section>
+  <section><h3>If something doesn't work</h3>
+    <ul>
+      <li><b>"Welcome back" screen:</b> the browser forgets folder access now and then. Press <b>Load library</b> and allow it again.</li>
+      <li><b>A game opens blank or says not found:</b> launcher.html has to sit in the same folder as <b>htmls</b>, and be opened from there. Keep the htmls folder name the same as the folder you selected.</li>
+      <li><b>Nothing happens when choosing a folder:</b> use Chrome or Edge and open the file from your computer, not from inside a zip.</li>
+      <li><b>Themes won't save:</b> link the launcher folder (the one containing launcher.html) with the second button above.</li>
+    </ul>
+  </section></div>`;
+  $("#hgames").onclick=async()=>{await pick();renderHelp()};
+  $("#hbase").onclick=async()=>{if(await linkBase())renderHelp()};
+  $("#hset").onclick=()=>setView("settings");
+}
+/* back / forward history (views and selected games) */
+let hist=[{v:"library",g:""}],hp=0,navBusy=false;
+function navUi(){const b=$("#nback"),f=$("#nfwd");if(b)b.disabled=hp<=0;if(f)f.disabled=hp>=hist.length-1}
+function navTrack(){if(navBusy)return;const c={v:view,g:view==="store"?(store.sel?"s:"+store.sel:""):selected?selected.folder:""},h=hist[hp];if(c.v===h.v&&c.g===h.g)return navUi();hist.splice(hp+1);hist.push(c);if(hist.length>100)hist.shift();hp=hist.length-1;navUi()}
+function navGo(d){const n=hp+d;if(n<0||n>=hist.length)return;hp=n;const st=hist[hp];navBusy=true;selected=games.find(g=>g.folder===st.g)||null;if(st.v==="store")store.sel=st.g.startsWith("s:")?st.g.slice(2):"";setView(st.v);render();navBusy=false;navUi()}
+{const _r=render;render=function(){_r();navTrack()}}
+$("#nback").onclick=()=>navGo(-1);$("#nfwd").onclick=()=>navGo(1);
+addEventListener("keydown",e=>{if(e.altKey&&e.key==="ArrowLeft"){e.preventDefault();navGo(-1)}if(e.altKey&&e.key==="ArrowRight"){e.preventDefault();navGo(1)}});
+$("#ver").textContent="v"+VOLT_VER;$("#ver").title="Volt launcher version "+VOLT_VER+" (read from the file name)";
+/* notification bell */
+try{const c=JSON.parse(localStorage.getItem("ht_upd")||"null");if(c){upd.items=c.items||[];upd.checked=c.t||0}}catch(e){}
+setTimeout(()=>{try{renderBell();maybeAutoCheck()}catch(e){}},1500);
+$("#bellb").onclick=e=>{e.stopPropagation();const N=$("#notif");N.classList.toggle("on");if(N.classList.contains("on")){drawNotif();if(updCfg()&&!upd.checked&&!upd.busy)checkUpdates(true)}};
+document.addEventListener("click",e=>{if(!e.composedPath().some(n=>n.id==="notif"||n.id==="bellb"))$("#notif").classList.remove("on")});   /* composedPath: the clicked button may already have been replaced */
+addEventListener("keydown",e=>{if(e.key==="Escape")$("#notif").classList.remove("on")});
+setInterval(maybeAutoCheck,60*1000);
+/* ===== STORE: browse and install game profiles published to the Drive folder ===== */
+const store={items:[],feat:[],loaded:0,busy:false,error:"",q:"",tag:"",sel:"",shot:0,slide:0,msg:"",work:{},timer:0,fails:{},retryN:0,retryT:0};
+const sImg=u=>/^data:image\/(png|jpe?g|webp|gif);base64,[\w+\/=]+$/i.test(u||"")?u:"";
+const sHue=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h};
+const sBg=it=>{const m=it.m||{},b=sImg(m.banner)||sImg((m.screens||[])[0]);
+  return b?`background-image:url('${b}')`:`background-image:linear-gradient(135deg,hsl(${sHue(it.name)},45%,30%),hsl(${(sHue(it.name)+55)%360},50%,13%))`};
+const sTags=it=>((it.m&&it.m.tags)||[]).map(String);
+const sShort=it=>{const m=it.m||{};return m.short||String(m.description||"").replace(/\s+/g," ").slice(0,170)||"No description yet."};
+const sDate=it=>{const d=(it.m&&it.m.updated)||(/^\d{4}-\d\d/.test(it.file.stamp||"")?it.file.stamp:"");const t=d?new Date(d):null;return t&&!isNaN(t)?t:null};
+const sDay=d=>d?d.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"";
+const sState=it=>{const g=findGame(it.key);if(!g)return{k:"new"};const rec=(lib.remote||{})[it.key];return{k:!rec||newer(it.stamp,rec.stamp)?"upd":"own",g}};
+const sBtn=(it,big)=>{const st=sState(it),w=store.work[it.key];
+  return `<span class="ibw"><button class="play stbtn${big?" big":""}${st.k==="own"?" own":""}" data-sa="${st.k==="own"?"play":"inst"}" data-k="${esc(it.key)}" ${w?"disabled":""}>${w?"Installing...":st.k==="own"?"Play":st.k==="upd"?"Update":"Install"}</button>${w?instBar(it.key):""}</span>`};
+const sChips=(arr,n)=>`<div class="stagrow">${arr.slice(0,n).map(t=>`<span class="schip" data-sa="tag" data-t="${esc(t)}">${esc(t)}</span>`).join("")}</div>`;
+
+const saveStoreCache=()=>{try{kv("set",{items:store.items.map(i=>({key:i.key,name:i.name,ver:i.ver,stamp:i.stamp,size:i.size,lstamp:i.lstamp||"",file:i.file,m:i.m})),fails:store.fails||{}},"storecat")}catch(e){}};
+let sscT=0;const saveStoreCacheSoon=()=>{clearTimeout(sscT);sscT=setTimeout(saveStoreCache,2000)};
+async function openStore(){store.shot=0;
+  if(!store.items.length&&!store.cacheTried){store.cacheTried=true;
+    try{const c=await kv("get",null,"storecat");if(c&&c.fails)store.fails=c.fails;if(c&&Array.isArray(c.items)&&c.items.length&&!store.items.length){store.items=c.items;setFeat()}}catch(e){}}
+  renderStore();loadStore(false)}
+async function loadStore(force){
+  if(store.busy)return;const c=updCfg();
+  if(!c){store.items=[];renderStore();return}
+  if(!force&&store.loaded&&Date.now()-store.loaded<10*60*1000)return;
+  if(force){store.fails={};store.retryN=0}
+  if(!net){store.error="You're offline. The store needs an internet connection.";renderStore();return}
+  store.busy=true;store.error="";renderStore();
+  try{
+    const files=await listRemote(c),zips=new Map(),lists=[];
+    for(const f of files){
+      if(/\.zip$/i.test(f.name)){const nm=profBase(f.name),key=nm.toLowerCase(),v=profVer(f.name)||"",o=zips.get(key);
+        if(!o||(v&&(!o.v||cmpVer(v,o.v)>0)))zips.set(key,{f,v,name:nm})}
+      else if(/\.store\.json$/i.test(f.name))lists.push(f)}
+    const meta=new Map(),old=new Map(store.items.map(i=>[i.key,i])),lmap=new Map(lists.map(f=>[f.name.replace(/\.store\.json$/i,"").toLowerCase(),f])),
+      same=(z,key)=>{const o=old.get(key),lf=lmap.get(key);return o&&o.m&&o.stamp===(z.v||z.f.stamp||"")&&(o.lstamp||"")===(lf?lf.stamp||"":"")&&o.size==z.f.size?o:null};
+    await Promise.all([...lmap.entries()].filter(([k])=>zips.has(k)&&!same(zips.get(k),k)).map(async([k,f])=>{try{const j=JSON.parse(await(await fetchBlob(f.url,f.name)).text());if(j&&j.name)meta.set(k,j)}catch(e){console.warn("store listing",f.name,e)}}));
+    const items=[...zips.values()].map(z=>{const key=z.name.toLowerCase(),o=same(z,key),lf=lmap.get(key),m=o?o.m:meta.get(key)||null;
+      return{key,name:(m&&m.name)||z.name,ver:z.v,stamp:z.v||z.f.stamp||"",file:z.f,size:z.f.size,lstamp:lf?lf.stamp||"":"",m}});
+    items.sort((a,b)=>(sDate(b)||0)-(sDate(a)||0)||a.name.localeCompare(b.name));
+    store.items=items;store.loaded=Date.now();setFeat();saveStoreCache();
+  }catch(e){store.error=e&&e.message?e.message:String(e)}
+  store.busy=false;renderStore();enrichStore()}
+/* read info.txt / icon / banner out of a zip on Drive using byte ranges (no full download) */
+const sWait=ms=>new Promise(r=>setTimeout(r,ms));
+const fullCache=new Map(),FULL_MAX=15*1048576;
+function fullBlob(url,label,onp,size){
+  const k=url+"|"+(+size||sizeOfUrl(url)||0);
+  if(!fullCache.has(k)){if(fullCache.size>=4)fullCache.delete(fullCache.keys().next().value);
+    const p=sBlob(url,label||"file",onp,size);p.catch(()=>fullCache.delete(k));fullCache.set(k,p)}
+  return fullCache.get(k)}
+async function readBody(r,touch,onp,size){
+  if(!r.body||!r.body.getReader){const b=new Uint8Array(await r.arrayBuffer());dlAdd(r,b.length);touch&&touch();return b}
+  const total=+r.headers.get("content-length")||+size||0,rd=r.body.getReader(),parts=[];let got=0;
+  for(;;){const d=await rd.read();if(d.done)break;parts.push(d.value);got+=d.value.length;dlAdd(r,d.value.length);touch&&touch();onp&&onp(got,total)}
+  const out=new Uint8Array(got);let o=0;for(const x of parts){out.set(x,o);o+=x.length}return out}
+let rangeBad=false;
+/* tiny check: can Drive be downloaded from at all? (starts a normal download and cancels it right away) */
+async function probeDownload(url){return qRun(3,async sg=>{const r=await fetchAny(url,{signal:sg});try{r.body&&r.body.cancel()}catch(e){}return true},"Check: is Drive allowing downloads? ("+nameOfUrl(url)+")",{noCool:true})}
+async function zipRange(url,a,b){
+  if(!rangeBad){
+    try{return await qRun(3,async(sg,touch)=>{const r=await fetchAny(url,{headers:{Range:`bytes=${a}-${b}`},signal:sg});touch();
+        const u=await readBody(r,touch);return r.status===206?u:u.subarray(a,b+1)},"Info read: "+nameOfUrl(url))}
+    catch(e){
+      if(e&&e.budget)throw e;
+      let ok=false;try{await probeDownload(url);ok=true}catch(e2){if(e2&&e2.budget)throw e2}
+      /* if plain downloads are refused too, this is the Drive limit - do NOT start big downloads */
+      if(!ok)throw e;
+      rangeBad=true;dlLog("Drive allows normal downloads but not partial reads - small games will use full downloads, big ones are skipped","w")}}
+  if(sizeOfUrl(url)>FULL_MAX)throw new Error("this zip is too big to preview without partial downloads");
+  const blob=await fullBlob(url,nameOfUrl(url));
+  return new Uint8Array(await blob.slice(a,b+1).arrayBuffer())}
+async function sBlob(url,label,onp,size){let last;
+  for(let t=0;t<2;t++){
+    try{return await qRun(3,async(sg,touch)=>{const r=await fetchAny(url,{signal:sg});touch();return new Blob([await readBody(r,touch,onp,size)])},"Full zip: "+(label||nameOfUrl(url)))}
+    catch(e){last=e;if(e&&(e.status===404||e.status===403||e.status===429||e.budget||Date.now()<driveCool))break}
+    await sWait(900*(t+1))}
+  throw dlError(label,last)}
+async function zipEntry(f,e,lim){if(e.csz>lim)return null;
+  const b=await zipRange(f.url,e.lo,Math.min(f.size-1,e.lo+30+600+e.csz)),dv=new DataView(b.buffer,b.byteOffset,b.byteLength),st=30+dv.getUint16(26,true)+dv.getUint16(28,true),data=b.subarray(st,st+e.csz);
+  if(e.me===0)return new Blob([data]);
+  if(e.me===8)return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+  return null}
+const sMime=n=>({png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",gif:"image/gif",webp:"image/webp"})[String(n).split(".").pop().toLowerCase()]||"image/png";
+const sData=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej(new Error("read"));r.readAsDataURL(b)});
+async function sSmall(b,w,type){try{const im=await createImageBitmap(b),k=Math.min(1,w/im.width),cv=document.createElement("canvas");cv.width=Math.max(1,Math.round(im.width*k));cv.height=Math.max(1,Math.round(im.height*k));
+  const x=cv.getContext("2d");if(type==="image/jpeg"){x.fillStyle="#000";x.fillRect(0,0,cv.width,cv.height)}x.drawImage(im,0,0,cv.width,cv.height);return await new Promise(r=>cv.toBlob(r,type,.82))}catch(e){return b}}
+async function zipMeta(f,fallback,pg){
+  const size=+f.size||0;if(size<22)return null;
+  const tn=Math.min(size,65557),tail=await zipRange(f.url,size-tn,size-1),dv=new DataView(tail.buffer,tail.byteOffset,tail.byteLength);let e=-1;pg&&pg(25);
+  for(let i=tail.length-22;i>=0;i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)return null;
+  const n=dv.getUint16(e+10,true),cs=dv.getUint32(e+12,true),co=dv.getUint32(e+16,true);if(co===0xFFFFFFFF||cs>4e6)return null;
+  const t0=size-tn,cd=co>=t0?tail.subarray(co-t0,co-t0+cs):await zipRange(f.url,co,co+cs-1),cv=new DataView(cd.buffer,cd.byteOffset,cd.byteLength),td=new TextDecoder(),ents=[];let p=0;
+  for(let k=0;k<n&&p+46<=cd.length;k++){if(cv.getUint32(p,true)!==0x02014b50)break;
+    const me=cv.getUint16(p+10,true),csz=cv.getUint32(p+20,true),nl=cv.getUint16(p+28,true),xl=cv.getUint16(p+30,true),cl=cv.getUint16(p+32,true),lo=cv.getUint32(p+42,true),nm=td.decode(cd.subarray(p+46,p+46+nl)).replace(/\\/g,"/");
+    p+=46+nl+xl+cl;if(!nm.endsWith("/"))ents.push({nm,me,csz,lo})}
+  const dp=x=>x.nm.split("/").length,infos=ents.filter(x=>/(^|\/)info\.txt$/i.test(x.nm)).sort((a,b)=>dp(a)-dp(b));if(!infos.length)return null;
+  const pre=infos[0].nm.slice(0,-8),top=re=>ents.find(x=>x.nm.startsWith(pre)&&!x.nm.slice(pre.length).includes("/")&&re.test(x.nm.slice(pre.length)));
+  const ie=top(/^icon\.(png|jpe?g|gif|webp)$/i),be=top(/^banner\.(png|jpe?g|gif|webp)$/i),img=async(x,w,t)=>{if(!x)return"";try{const b=await zipEntry(f,x,4e6);return b?await sData(await sSmall(new Blob([b],{type:sMime(x.nm)}),w,t)):""}catch(er){return""}},
+  pIc=img(ie,128,"image/png"),pBn=img(be,920,"image/jpeg"),ib=await zipEntry(f,infos[0],300000);if(!ib)return null;
+  const pi=parseInfo(await ib.text(),fallback);pg&&pg(55);
+  const icD=await pIc;pg&&pg(78);const bnD=await pBn;pg&&pg(95);
+  return{name:pi.name,developer:pi.developer||"",short:pi.short||"",released:pi.released||"",description:pi.description,tags:pi.tags,type:pi.url?"web":"game",icon:icD,banner:bnD,screens:[]}}
+async function zipMetaFull(f,fallback,pg){
+  const pr=detectProfile(await readZip(await fullBlob(f.url,f.name,(g,t)=>pg&&pg(8+(t?g/t:Math.min(.9,g/5e7))*70),f.size)),fallback);if(!pr.info)return null;
+  const pi=parseInfo(await(await pr.info.get()).text(),fallback),pick=re=>pr.files.find(x=>!x.path.includes("/")&&re.test(x.path)),
+  img=async(x,w,t)=>{if(!x)return"";try{return await sData(await sSmall(new Blob([await x.get()],{type:sMime(x.path)}),w,t))}catch(e){return""}};
+  return{name:pi.name,developer:pi.developer||"",short:pi.short||"",released:pi.released||"",description:pi.description,tags:pi.tags,type:pi.url?"web":"game",
+    icon:await img(pick(/^icon\.(png|jpe?g|gif|webp)$/i),128,"image/png"),banner:await img(pick(/^banner\.(png|jpe?g|gif|webp)$/i),920,"image/jpeg"),screens:[]}}
+let storeGen=0;
+function setFeat(){const vis=store.items.filter(i=>i.m&&(sImg(i.m.banner)||(i.m.screens||[]).length));store.feat=(vis.length?vis:store.items).slice(0,5);store.slide=0}
+async function enrichStore(){
+  const gen=++storeGen;store.diag={};store.fails=store.fails||{};clearTimeout(store.retryT);
+  /* each game is looked at ONCE (result is remembered); failures wait 6 hours; no blind retry rounds */
+  const now=Date.now(),FAILMS=6*36e5;let todo=[];
+  for(const i of store.items.filter(i=>!i.m)){const f=store.fails[i.key];
+    if(f&&f.stamp===i.stamp&&now-f.at<FAILMS)store.diag[i.key]=f.why||"Couldn't load earlier - press Refresh to try again.";else todo.push(i)}
+  todo.sort((a,b)=>(+a.file.size||0)-(+b.file.size||0));
+  renderStore();if(!todo.length)return;
+  const pause=msg=>{for(const i of todo)if(!i.m&&store.diag[i.key]===undefined)store.diag[i.key]=msg;renderStore()};
+  let paused=false;
+  for(const it of todo){
+    if(gen!==storeGen)return;
+    if(Date.now()<driveCool){pause("Drive's download limit is active - Volt will try again later.");paused=true;break}
+    if(dlBg.bytes>=bgLimit()){pause("Today's background download budget is used up (Settings > Advanced).");break}
+    let m=null,why="";sSetLP(it.key,5);
+    try{if(rangeBad){if((+it.file.size||0)<=FULL_MAX){sSetLP(it.key,8);m=await zipMetaFull(it.file,it.name,p=>sSetLP(it.key,Math.round(p)))}else why="Too big to preview without partial downloads."}
+      else m=await zipMeta(it.file,it.name,p=>sSetLP(it.key,p))}
+    catch(e){why=e&&e.message?e.message:String(e)}
+    if(gen!==storeGen)return;
+    if(m){it.m=m;delete store.diag[it.key];delete store.fails[it.key];store.retryN=0;setFeat();saveStoreCacheSoon()}
+    else{store.diag[it.key]=why||"there is no info.txt inside the zip";dlLog("Store info: couldn't read "+it.name+" - "+store.diag[it.key],"w");
+      if(Date.now()<driveCool){paused=true;pause("Drive's download limit is active - Volt will try again later.");break}   /* a limit is not the game's fault: don't remember it as failed */
+      store.fails[it.key]={stamp:it.stamp,at:Date.now(),why:store.diag[it.key]}}
+    renderStore();await sWait(300)}
+  if(gen===storeGen){saveStoreCache();
+    if(paused){const d=[120,300,900,3600][Math.min(store.retryN||0,3)]*1000;store.retryN=(store.retryN||0)+1;
+      store.retryT=setTimeout(()=>{if(!store.busy)enrichStore()},d);dlLog("Store info will try again in "+Math.round(d/60000)+" min (then less often)")}}}
+const sFailed=it=>!it.m&&!!store.diag&&store.diag[it.key]!==undefined;
+const sIco=it=>{if(it.m){const u=sImg(it.m.icon);return u?`<img class="sico" src="${u}" alt="">`:""}return sFailed(it)?`<span class="sico ph bad" title="Icon didn't load">&#10005;</span>`:`<span class="sico ph" title="Loading icon..."><i></i></span>`};
+const sPh0=it=>it.m?"":sFailed(it)?`<div class="sfail"><b>&#10005;</b><span>Image didn't load</span></div>`:`<div class="sload"><i></i></div>`;
+const sLbar=it=>{const o=inst.get(it.key);let p=null;
+  if(o)p=Math.max(o.pct,0);else if(!it.m&&!sFailed(it))p=sProg.get(it.key)||0;
+  return p==null?"":barH(it.key,p)};
+const sPh=it=>sPh0(it)+sLbar(it);
+const sTxtPh=it=>sFailed(it)?`<div class="sfailtx"><b>&#10005;</b><div><strong>The icon, description and tags didn't load</strong><br><small>${esc(store.diag[it.key])}</small><br><button class="btn" data-sa="refresh" style="margin-top:8px">Try again</button></div></div>`:`<div class="sloadtx"><i></i> Loading description and tags...</div>`;
+const sTagPh=it=>it.m?"":sFailed(it)?`<div class="sfl2" style="color:#e66;margin-top:12px">&#10005; Tags didn't load</div>`:`<div class="sfl2" style="margin-top:12px"><i class="sdot"></i> Loading tags...</div>`;
+
+
+function sFeat(){const f=store.feat;if(!f.length)return"";const it=f[store.slide%f.length],m=it.m||{},sh=(m.screens||[]).map(sImg).filter(Boolean).slice(0,4);
+  return `<div class="sfeat"><div class="sfl" data-sa="open" data-k="${esc(it.key)}" style="${sBg(it)}">${sPh(it)}${f.length>1?`<button class="sarr l" data-sa="prev">&#10094;</button><button class="sarr r" data-sa="next">&#10095;</button>`:""}</div>
+    <div class="sfr"><h3>${sIco(it)}${esc(it.name)}</h3>${sh.length?`<div class="sfs">${sh.map(u=>`<i style="background-image:url('${u}')"></i>`).join("")}</div>`:(it.m?`<p class="sfd">${esc(sShort(it))}</p>`:sFailed(it)?`<div class="sfailtx" style="padding:10px 14px"><b style="font-size:36px">&#10005;</b><div>Description and tags didn't load</div></div>`:`<div class="sloadtx"><i></i> Loading details...</div>`)}
+    ${sTags(it).length?`<div><div class="sfl2">Popular tags</div>${sChips(sTags(it),5)}</div>`:""}
+    <div class="sfoot"><span class="sprice">Free</span>${sBtn(it)}</div></div></div>
+    ${f.length>1?`<div class="sdots">${f.map((_,i)=>`<i data-sa="dot" data-i="${i}" class="${i===store.slide%f.length?"on":""}"></i>`).join("")}</div>`:""}`}
+const sCard=it=>`<div class="scard" data-sa="open" data-k="${esc(it.key)}"><div class="scimg" style="${sBg(it)}">${sPh(it)}</div><div class="scb">${sIco(it)}<b>${esc(it.name)}</b><span class="sprice">Free</span></div></div>`;
+const sRow=it=>{const st=sState(it),d=sDay(sDate(it));
+  return `<div class="srow" data-sa="open" data-k="${esc(it.key)}"><div class="srimg" style="${sBg(it)}">${sPh(it)}</div><div class="srt"><b>${sIco(it)}${esc(it.name)}</b><small>${it.m?esc(sTags(it).slice(0,5).join(", "))||"&nbsp;":sFailed(it)?"<span style='color:#e66'>&#10005; Details didn't load</span>":"Loading details..."}</small><small class="${st.k==="own"?"sown":""}">${st.k==="own"?"In your Library":st.k==="upd"?"Update available":""}</small></div><div class="srd">${esc(d)}</div><div class="srp"><span class="sprice">Free</span></div></div>`};
+function sDetail(it){const m=it.m||{},st=sState(it),shots=(m.screens||[]).map(sImg).filter(Boolean),main=shots[store.shot]||sImg(m.banner),web=sTags(it).some(t=>t.toLowerCase()==="website");
+  const rows=[["Developer",m.developer],["Released",m.released?sDay(new Date(m.released)):""],["Updated",sDay(sDate(it))],["Version",it.ver],["Type",web?"Website":"HTML game"],["Size",fmtSize(it.size)]].filter(r=>r[1]);
+  return `${!it.m&&store.diag&&store.diag[it.key]!==undefined?`<div class="smsg bad">Couldn't read this game's details from its zip (${esc(store.diag[it.key])}).</div>`:""}<div class="scrumb"><a data-sa="back">All Games</a> &gt; <span>${esc(it.name)}</span></div><h1 class="stt">${sIco(it)}${esc(it.name)}</h1>
+  <div class="sdet"><div class="sdl"><div class="smain" style="${main?`background-image:url('${main}')`:sBg(it)}">${sPh(it)}</div>${shots.length>1?`<div class="sthumbs">${shots.map((u,i)=>`<i data-sa="shot" data-i="${i}" class="${i===store.shot?"on":""}" style="background-image:url('${u}')"></i>`).join("")}</div>`:""}</div>
+  <div class="sdr"><div class="scap" style="${sBg(it)}">${sPh(it)}</div>${it.m?`<p class="sdesc">${esc(sShort(it))}</p>`:""}<table class="sinfo">${rows.map(r=>`<tr><td>${r[0]}</td><td>${esc(r[1])}</td></tr>`).join("")}</table>${sTags(it).length?`<div class="sfl2" style="margin-top:12px">Popular tags</div>${sChips(sTags(it),12)}`:sTagPh(it)}</div></div>
+  <div class="sbuy"><h2>${st.k==="own"?"Play":"Get"} ${esc(it.name)}</h2><div class="sbr">${st.k==="own"?`<span class="sown">In your Library</span>`:""}<span class="sprice">Free</span>${sBtn(it,1)}</div></div>
+  <div class="sabout"><h2>About this game</h2><div class="sbody">${it.m?esc(m.description||sShort(it)):sTxtPh(it)}</div></div>`}
+
+function renderStore(){
+  if(view!=="store")return;
+  const S=$("#store"),old=S.querySelector("#sq"),foc=old&&document.activeElement===old,pos=foc?old.selectionStart:0,top=S.scrollTop,c=updCfg(),its=store.items;
+  const q=store.q.trim().toLowerCase(),filt=!!(q||store.tag),sel=store.sel&&its.find(i=>i.key===store.sel);
+  let h=`<div class="sth"><div class="stw stbar"><div class="snav"><a data-sa="home" class="${!sel&&!filt?"on":""}">Your Store</a><a data-sa="goto" data-t="snew">New &amp; Updated</a><a data-sa="goto" data-t="stags">Browse by tag</a><a data-sa="refresh" title="Reload the store">${store.busy?"Loading...":"Refresh"}</a></div><div class="ssearch"><input id="sq" placeholder="search the store" value="${esc(store.q)}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="#9fc2d9" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg></div></div></div><div class="stw stbody">`;
+  if(store.msg)h+=store.msg==="__ok"?`<div class="smsg ok">Installed. It's in your Library now.</div>`:`<div class="smsg bad">${esc(store.msg)}</div>`;
+  if(!c)h+=`<div class="empty"><h2>No store connected</h2><p>The store lists game profiles from the Google Drive folder set in this launcher's update source. None is set up yet.</p><button class="btn" data-sa="settings">Open Settings</button></div>`;
+  else if(store.busy&&!its.length)h+=`<div class="empty"><h2>Loading the store...</h2><p>Reading the game list from Google Drive.</p></div>`;
+  else if(store.error&&!its.length)h+=`<div class="empty"><h2>Couldn't load the store</h2><p style="color:#e66">${esc(store.error)}</p><button class="btn" data-sa="refresh">Try again</button></div>`;
+  else if(!its.length)h+=`<div class="empty"><h2>Nothing published yet</h2><p>No game profiles are in the Drive folder. Publish one with Volt Publisher and it shows up here.</p></div>`;
+  else if(sel)h+=sDetail(sel);
+  else if(filt){
+    const r=its.filter(i=>(!store.tag||sTags(i).some(t=>t.toLowerCase()===store.tag.toLowerCase()))&&(!q||(i.name+" "+sShort(i)+" "+((i.m&&i.m.description)||"")+" "+sTags(i).join(" ")).toLowerCase().includes(q)));
+    h+=`<div class="shd">Search results <small>${r.length} game${r.length===1?"":"s"}${store.tag?` tagged <b>${esc(store.tag)}</b>`:""}</small> <span class="schip on" data-sa="clear">Clear &#10005;</span></div>`+(r.map(sRow).join("")||`<p style="color:var(--dim)">Nothing matches.</p>`)}
+  else{
+    const cnt=new Map();its.forEach(i=>sTags(i).forEach(t=>{const k=t.toLowerCase(),o=cnt.get(k)||{t,n:0};o.n++;cnt.set(k,o)}));
+    const tg=[...cnt.values()].sort((a,b)=>b.n-a.n||a.t.localeCompare(b.t)).slice(0,30);
+    h+=`<div class="sfw" id="stfeat">${sFeat()}</div>
+    <div class="shd" id="snew">New &amp; updated</div><div class="sgrid">${its.slice(0,6).map(sCard).join("")}</div>
+    ${tg.length?`<div class="shd" id="stags">Browse by tag</div><div class="stagrow">${tg.map(o=>`<span class="schip" data-sa="tag" data-t="${esc(o.t)}">${esc(o.t)}<small>${o.n}</small></span>`).join("")}</div>`:""}
+    <div class="shd">All games <small>${its.length}</small></div>${its.slice().sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:"base"})).map(sRow).join("")}`}
+  S.innerHTML=h;S.scrollTop=top;
+  if(foc){const n=S.querySelector("#sq");n.focus();n.setSelectionRange(pos,pos)}
+  clearInterval(store.timer);
+  if(c&&its.length&&!sel&&!filt&&store.feat.length>1)store.timer=setInterval(()=>{const e=$("#stfeat");if(view!=="store"||store.sel||document.hidden||!e)return;store.slide++;e.innerHTML=sFeat()},7000)}
+async function storeInstall(key){
+  const it=store.items.find(x=>x.key===key);if(!it||store.work[key])return;
+  if(!root){store.msg="Select your htmls folder first (Settings > Folders), then press Install again.";renderStore();return}
+  if(!net){store.msg="You're offline.";renderStore();return}
+  store.work[key]=1;store.msg="";renderStore();
+  try{await installRemoteProfile({kind:"new",key,stamp:it.stamp,name:it.name,file:it.file});
+    upd.items=upd.items.filter(y=>!(y.key===key&&y.kind!=="launcher"));renderBell();store.msg="__ok"}
+  catch(e){store.msg=e&&e.message?e.message:String(e)}
+  delete store.work[key];renderStore()}
+$("#store").addEventListener("click",e=>{
+  const a=e.target.closest("[data-sa]");if(!a)return;e.stopPropagation();const k=a.dataset.k,S=$("#store"),act=a.dataset.sa;
+  const feat=()=>{const f=$("#stfeat");if(f)f.innerHTML=sFeat()};
+  if(act==="inst")storeInstall(k);
+  else if(act==="play"){const g=findGame(k);if(g)launch(g)}
+  else if(act==="open"){store.sel=k;store.shot=0;store.msg="";renderStore();S.scrollTop=0;navTrack()}
+  else if(act==="back"||act==="home"){store.sel="";store.q="";store.tag="";store.msg="";renderStore();S.scrollTop=0;navTrack()}
+  else if(act==="prev"){e.stopPropagation();store.slide=(store.slide+store.feat.length-1)%store.feat.length;feat()}
+  else if(act==="next"){store.slide=(store.slide+1)%store.feat.length;feat()}
+  else if(act==="dot"){store.slide=+a.dataset.i;feat()}
+  else if(act==="shot"){store.shot=+a.dataset.i;const it=store.items.find(x=>x.key===store.sel);if(it){const m=$("#store .smain"),u=sImg(((it.m||{}).screens||[])[store.shot]);if(m&&u)m.style.backgroundImage=`url('${u}')`;$("#store").querySelectorAll(".sthumbs i").forEach((x,i)=>x.classList.toggle("on",i===store.shot))}}
+  else if(act==="tag"){store.tag=store.tag.toLowerCase()===a.dataset.t.toLowerCase()?"":a.dataset.t;store.sel="";renderStore();S.scrollTop=0;navTrack()}
+  else if(act==="clear"){store.tag="";store.q="";renderStore()}
+  else if(act==="refresh")loadStore(true);
+  else if(act==="settings")setView("settings");
+  else if(act==="goto"){if(store.sel||store.q||store.tag){store.sel="";store.q="";store.tag="";renderStore()}const t=document.getElementById(a.dataset.t);if(t)t.scrollIntoView({behavior:"smooth",block:"start"})}});
+$("#store").addEventListener("input",e=>{if(e.target.id==="sq"){store.q=e.target.value;store.sel="";renderStore()}});
+
+dlLoad();dlLog("Volt started - "+(VKEYS().length)+" Drive key(s) configured");
+restore();
+</script>
+</body>
+</html>
