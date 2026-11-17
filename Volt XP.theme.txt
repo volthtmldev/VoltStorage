@@ -1,0 +1,16 @@
+name: Volt XP
+type: gradient
+background: #cecece
+panel: #8b8b8b
+header: #0a42c8
+text: #ffffff
+accent: #66c0f4
+button: #6fd819
+gradient-background: 180 | 0 #787f87, 100 #0f1923, 9.1 #ffffff, 81.2 #a8a8a8
+gradient-panel: 180 | 0 #4c4f52, 100 #171717, 9.1 #b5b5b5, 81.2 #6b6b6b
+gradient-header: 180 | 0 #a0a5b1, 100 #141a2a, 33.4 #0046ea, 84 #1d3b81
+gradient-button: 180 | 72.9 #459900, 36.9 #87fc27, 0 #a8e576, 97.9 #3d5926
+favicon: color
+favicon-gradient: 201 | 0 #d9ffd6, 100 #135c05, 33.5 #11e901, 64.7 #129503
+favicon-bolt: #ececec
+favicon-rim: off
