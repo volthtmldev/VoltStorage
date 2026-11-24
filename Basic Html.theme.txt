@@ -1,0 +1,12 @@
+name: Basic Html
+type: custom
+background: #ffffff
+panel: #ffffff
+header: #ffffff
+text: #000000
+accent: #000000
+button: #000000
+favicon: color
+favicon-gradient: 90 | 0 #ffffff, 100 #ffffff
+favicon-bolt: #000000
+favicon-rim: off
