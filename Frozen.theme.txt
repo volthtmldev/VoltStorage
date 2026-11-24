@@ -1,0 +1,15 @@
+name: Frozen
+type: gradient
+background: #9299cf
+panel: #505b6b
+header: #9299cf
+text: #00fffb
+accent: #fff700
+button: #75b022
+gradient-background: 159 | 100 #02006b, 0 #0f1923, 92.4 #6065a9, 66.1 #152499, 35.9 #ffffff, 16.5 #0080ff
+gradient-panel: 270 | 100 #01002e, 0 #0b1219, 92.4 #35385f, 66.1 #132a4e, 35.9 #858585, 16.5 #00458a
+gradient-header: 180 | 100 #02006b, 0 #0f1923, 92.4 #6065a9, 66.1 #152499, 35.9 #ffffff, 16.5 #0080ff
+favicon: color
+favicon-gradient: 144 | 100 #c2ccf0, 0 #24b6ff, 51.5 #0062ff, 27.8 #4660af
+favicon-bolt: #ffffff
+favicon-rim: on
